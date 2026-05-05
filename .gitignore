@@ -1,0 +1,15 @@
+.DS_Store
+node_modules/
+dist/
+.cache/
+*.log
+
+wp-content/uploads/
+wp-content/cache/
+wp-content/upgrade/
+wp-content/plugins/
+wp-admin/
+wp-includes/
+
+*.sql
+*.zip
