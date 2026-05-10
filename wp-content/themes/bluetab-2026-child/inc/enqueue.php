@@ -21,9 +21,16 @@ function bluetab_child_enqueue_assets()
     );
 
     wp_enqueue_style(
+        'bluetab-google-fonts',
+        'https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&family=Titillium+Web:wght@400;600;700;900&display=swap',
+        [],
+        null
+    );
+
+    wp_enqueue_style(
         'bluetab-tokens',
         get_stylesheet_directory_uri() . '/assets/css/tokens.css',
-        ['divi-parent-style'],
+        ['divi-parent-style', 'bluetab-google-fonts'],
         bluetab_child_asset_version('assets/css/tokens.css')
     );
 

@@ -1,5 +1,5 @@
 .bt-container {
-    width: min(100% - 32px, var(--bt-container-max));
+    width: min(100%, var(--bt-container-max));
     margin-inline: auto;
 }
 
@@ -12,11 +12,11 @@
 }
 
 .bt-section--white {
-    background-color: var(--bt-color-white);
+    background-color: var(--bt-color-surface-default);
 }
 
 .bt-section--dark {
-    color: var(--bt-color-white);
+    color: var(--bt-color-white-smoke);
     background-color: var(--bt-color-bg-dark);
 }
 

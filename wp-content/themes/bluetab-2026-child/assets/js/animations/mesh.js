@@ -2,16 +2,16 @@
     'use strict';
 
     const DEFAULT_CONFIG = {
-        lineCount: 75,
-        lineWidth: 0.5,
-        opacity: 0.8,
+        lineCount: 70,
+        lineWidth: 0.75,
+        opacity: 0.7,
         speed: 0.012,
-        xStep: 2,
+        xStep: 8,
         amplitudeBase: 30,
         amplitudeVariance: 12,
         frequencyBase: 0.005,
         frequencyVariance: 0.001,
-        colors: ['#2563eb', '#6366f1', '#a855f7', '#f97316'],
+        colors: ['#212492', '#542675', '#e05206'],
     };
 
     function createCanvas(container) {
@@ -65,14 +65,43 @@
         let time = 0;
         let waveGradient = null;
         let animationFrame = null;
+        let lastFrameTime = 0;
+        let targetFps = 30;
+        let frameInterval = 1000 / targetFps;
+        let isVisible = true;
+        let isPageVisible = !document.hidden;
+        let observer = null;
+        const variant = {
+            phase: Math.random() * Math.PI * 2,
+            drift: 0.12 + Math.random() * 0.16,
+            amplitude: 0.9 + Math.random() * 0.18,
+            frequency: 0.96 + Math.random() * 0.08,
+            perspective: 0.72 + Math.random() * 0.18,
+            horizonShift: -18 + Math.random() * 36,
+        };
 
         function resize() {
-            dpr = Math.min(window.devicePixelRatio || 1, 2);
+            dpr = Math.min(window.devicePixelRatio || 1, 1.25);
 
             const rect = canvas.getBoundingClientRect();
 
             width = rect.width;
             height = rect.height;
+
+            const viewportWidth =
+                window.innerWidth || document.documentElement.clientWidth;
+
+            if (viewportWidth <= 767) {
+                config.lineCount = Math.min(config.lineCount, 24);
+                targetFps = 24;
+            } else if (viewportWidth <= 980) {
+                config.lineCount = Math.min(config.lineCount, 32);
+                targetFps = 30;
+            } else {
+                targetFps = 30;
+            }
+
+            frameInterval = 1000 / targetFps;
 
             canvas.width = Math.floor(width * dpr);
             canvas.height = Math.floor(height * dpr);
@@ -122,13 +151,14 @@
             ctx.globalAlpha = 1;
         }
 
-        function animate() {
+        function animate(currentTime = 0) {
             const prefersReducedMotion =
                 document.documentElement.classList.contains(
                     'bt-reduced-motion',
                 );
 
-            if (prefersReducedMotion) {
+            if (prefersReducedMotion || !isVisible || !isPageVisible) {
+                animationFrame = null;
                 return;
             }
 
@@ -137,21 +167,35 @@
             const hSpacing = height / (config.lineCount - 10);
 
             for (let i = -5; i < config.lineCount; i++) {
-                const y = i * hSpacing;
-                const phase = time * config.speed + i * 0.25;
+                const progress = i / config.lineCount;
+                const perspective = 1 + progress * variant.perspective;
+                const y = i * hSpacing + variant.horizonShift * progress;
+                const phase =
+                    time * config.speed * (1 + progress * variant.drift) +
+                    i * 0.25 +
+                    variant.phase;
 
                 const opacity = Math.max(
                     0,
-                    Math.min(1, config.opacity + Math.sin(i * 0.4) * 0.15),
+                    Math.min(
+                        1,
+                        config.opacity +
+                            Math.sin(i * 0.4 + variant.phase) * 0.08,
+                    ),
                 );
 
                 const amplitude =
-                    config.amplitudeBase +
-                    Math.sin(i * 0.3) * config.amplitudeVariance;
+                    (config.amplitudeBase +
+                        Math.sin(i * 0.3 + variant.phase) *
+                            config.amplitudeVariance) *
+                    variant.amplitude *
+                    perspective;
 
                 const frequency =
-                    config.frequencyBase +
-                    Math.sin(i * 0.2) * config.frequencyVariance;
+                    (config.frequencyBase +
+                        Math.sin(i * 0.2 + variant.phase) *
+                            config.frequencyVariance) *
+                    variant.frequency;
 
                 drawFlowingHorizontalLine(
                     y,
@@ -165,21 +209,82 @@
             }
 
             time += 1;
+            lastFrameTime = 0;
             animationFrame = requestAnimationFrame(animate);
         }
 
         function start() {
             resize();
+
+            if (animationFrame || !isVisible || !isPageVisible) {
+                return;
+            }
+
             animationFrame = requestAnimationFrame(animate);
         }
 
+        function pause() {
+            if (!animationFrame) {
+                return;
+            }
+
+            cancelAnimationFrame(animationFrame);
+            animationFrame = null;
+        }
+
+        function handleVisibilityChange() {
+            isPageVisible = !document.hidden;
+
+            if (isPageVisible && isVisible) {
+                start();
+            } else {
+                pause();
+            }
+        }
+
+        function setupVisibilityObserver() {
+            if (!('IntersectionObserver' in window)) {
+                return;
+            }
+
+            observer = new IntersectionObserver(
+                (entries) => {
+                    const entry = entries[0];
+                    isVisible = entry.isIntersecting;
+
+                    if (isVisible && isPageVisible) {
+                        start();
+                    } else {
+                        pause();
+                    }
+                },
+                {
+                    root: null,
+                    threshold: 0,
+                    rootMargin: '160px 0px 160px 0px',
+                },
+            );
+
+            observer.observe(container);
+        }
+
         function stop() {
-            if (animationFrame) {
-                cancelAnimationFrame(animationFrame);
+            pause();
+            window.removeEventListener('resize', resize);
+            document.removeEventListener(
+                'visibilitychange',
+                handleVisibilityChange,
+            );
+
+            if (observer) {
+                observer.disconnect();
+                observer = null;
             }
         }
 
         window.addEventListener('resize', resize);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        setupVisibilityObserver();
 
         start();
 

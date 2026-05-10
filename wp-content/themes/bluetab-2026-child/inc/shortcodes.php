@@ -138,6 +138,129 @@ function bluetab_hero_acf_shortcode()
     return ob_get_clean();
 }
 
+function bluetab_get_acf_image_url($image)
+{
+    if (empty($image)) {
+        return '';
+    }
+
+    if (is_array($image) && !empty($image['url'])) {
+        return $image['url'];
+    }
+
+    if (is_numeric($image)) {
+        return wp_get_attachment_image_url((int) $image, 'full') ?: '';
+    }
+
+    if (is_string($image)) {
+        return $image;
+    }
+
+    return '';
+}
+
+function bluetab_accelerators_shortcode()
+{
+    if (!function_exists('get_field')) {
+        return '';
+    }
+
+    $section_title = get_field('section_title') ?: '';
+    $section_intro = get_field('section_intro') ?: '';
+    $section_image = bluetab_get_acf_image_url(get_field('section_image'));
+
+    $assets = [];
+
+    for ($i = 1; $i <= 4; $i++) {
+        $logo = get_field('asset_' . $i . '_logo');
+        $title = get_field('asset_' . $i . '_title') ?: '';
+        $text = get_field('asset_' . $i . '_text') ?: '';
+        $url = get_field('asset_' . $i . '_url') ?: '';
+
+        if ($title === '' && $text === '' && $url === '' && empty($logo)) {
+            continue;
+        }
+
+        $assets[] = [
+            'logo' => bluetab_get_acf_image_url($logo),
+            'title' => $title,
+            'text' => $text,
+            'url' => $url,
+        ];
+    }
+
+    if ($section_title === '' && $section_intro === '' && empty($assets) && $section_image === '') {
+        return '';
+    }
+
+    ob_start();
+    ?>
+    <section class="bt-section bt-section--dark bt-accelerators" aria-labelledby="bt-accelerators-title">
+        <div class="bt-container">
+            <?php if ($section_title !== ''): ?>
+                <h2 id="bt-accelerators-title" class="bt-type-h3 bt-accelerators__title">
+                    <?php echo esc_html($section_title); ?>
+                </h2>
+            <?php endif; ?>
+
+            <?php if ($section_intro !== ''): ?>
+                <p class="bt-type-h5 bt-accelerators__intro">
+                    <?php echo esc_html($section_intro); ?>
+                </p>
+            <?php endif; ?>
+
+            <?php if (!empty($assets) || $section_image !== ''): ?>
+                <div class="bt-accelerators__grid">
+                    <?php if (!empty($assets)): ?>
+                        <div class="bt-accelerators__list">
+                            <?php foreach ($assets as $asset): ?>
+                                <article class="bt-asset-card">
+                                    <?php if ($asset['logo'] !== ''): ?>
+                                        <div class="bt-asset-card__media">
+                                            <img src="<?php echo esc_url($asset['logo']); ?>" alt="">
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <div class="bt-asset-card__content">
+                                        <?php if ($asset['title'] !== ''): ?>
+                                            <h4 class="bt-type-h4 bt-asset-card__title">
+                                                <?php echo esc_html($asset['title']); ?>
+                                            </h4>
+                                        <?php endif; ?>
+
+                                        <?php if ($asset['text'] !== ''): ?>
+                                            <p class="bt-type-p bt-asset-card__text">
+                                                <?php echo esc_html($asset['text']); ?>
+                                            </p>
+                                        <?php endif; ?>
+
+                                        <?php if ($asset['url'] !== ''): ?>
+                                            <a class="bt-card-link bt-card-link--blue" href="<?php echo esc_url($asset['url']); ?>"
+                                                aria-label="<?php echo esc_attr('Explorar' . ($asset['title'] !== '' ? ': ' . $asset['title'] : '')); ?>">
+                                                <span>Explorar</span>
+                                                <span class="material-symbols-rounded" aria-hidden="true">arrow_forward</span>
+                                            </a>
+                                        <?php endif; ?>
+                                    </div>
+                                </article>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($section_image !== ''): ?>
+                        <div class="bt-accelerators__media">
+                            <img src="<?php echo esc_url($section_image); ?>" alt="">
+                        </div>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+    </section>
+    <?php
+    return ob_get_clean();
+}
+
 add_shortcode('bt_hero_acf', 'bluetab_hero_acf_shortcode');
 add_shortcode('bt_hero', 'bluetab_hero_shortcode');
 add_shortcode('bt_solution_card', 'bluetab_solution_card_shortcode');
+add_shortcode('bt_accelerators', 'bluetab_accelerators_shortcode');

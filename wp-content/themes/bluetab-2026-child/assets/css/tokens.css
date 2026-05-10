@@ -1,119 +1,156 @@
 :root {
-  /* ================================
+    /* ================================
      COLORS — FOUNDATION
   ================================= */
 
-  /* Core */
-  --bt-color-bg-dark: #1f222d;
-  --bt-color-bg-light: #f2f2f2;
-  --bt-color-white: #ffffff;
+    /* Core */
+    --bt-color-bg-dark: #1f222d;
+    --bt-color-bg-light: #f2f2f2;
+    --bt-color-white-smoke: #f9f9f9;
+    --bt-color-bg-white-smoke: var(--bt-color-white-smoke);
+    --bt-color-white: #ffffff;
+    --bt-color-light-grey: #f2f2f2;
 
-  /* Primary scale */
-  --bt-color-primary-700: #31277e;
-  --bt-color-primary-600: #3c2582;
-  --bt-color-primary-500: #542675;
-  --bt-color-primary-400: #212492;
+    /* Primary scale */
+    --bt-color-primary-700: #31277e;
+    --bt-color-primary-600: #3c2582;
+    --bt-color-primary-500: #542675;
+    --bt-color-morado-bluetab: #542675;
+    --bt-color-primary-400: #212492;
+    --bt-color-azul-bluetab: #212492;
 
-  /* Accents */
-  --bt-color-accent-red: #9b3c3d;
-  --bt-color-accent-orange: #e05206;
-  --bt-color-accent-orange-alt: #e73b28;
+    /* Accents */
+    --bt-color-accent-red: #9b3c3d;
+    --bt-color-accent-orange: #e05206;
+    --bt-color-naranja-bluetab: #e05206;
+    --bt-color-accent-orange-alt: #e73b28;
 
-  /* Text */
-  --bt-color-text-main: #1f222d;
-  --bt-color-text-muted: #4a4a4a;
-  --bt-color-text-soft: #959595;
+    /* Text */
+    --bt-color-text-main: #1f222d;
+    --bt-color-negro-no-negro: #1f222d;
+    --bt-color-text-muted: #4a4a4a;
+    --bt-color-text-soft: #959595;
 
-  /* Surfaces */
-  --bt-color-surface-default: #ffffff;
-  --bt-color-surface-subtle: #f9f9f9;
+    /* Navigation */
+    --bt-nav-page-gutter: var(--bt-space-3);
+    --bt-color-menu-hover-dark: var(--bt-color-bg-dark);
+    --bt-color-submenu-button-hover: #16185e;
+    --bt-color-button-primary-hover-dark: #16185e;
 
-  /* Gradients */
-  --bt-gradient-primary: linear-gradient(
-    135deg,
-    var(--bt-color-primary-700) 0%,
-    var(--bt-color-primary-500) 55%,
-    var(--bt-color-accent-orange) 100%
-  );
+    /* Surfaces */
+    --bt-color-surface-default: var(--bt-color-white-smoke);
+    --bt-color-surface-subtle: var(--bt-color-white-smoke);
+    --bt-color-surface-elevated: var(--bt-color-white-smoke);
 
-  /* ================================
+    /* Gradients */
+    --bt-gradient-primary: linear-gradient(
+        135deg,
+        var(--bt-color-primary-700) 0%,
+        var(--bt-color-primary-500) 55%,
+        var(--bt-color-accent-orange) 100%
+    );
+
+    /* ================================
      TYPOGRAPHY
   ================================= */
 
-  --bt-font-family: "Titillium Web", Arial, sans-serif;
+    /* Font families */
+    --bt-font-family-base: 'Titillium Web', Arial, sans-serif;
+    --bt-font-family-heading: 'Titillium Web', Arial, sans-serif;
+    --bt-font-family-icon: 'Material Symbols Rounded';
 
-  --bt-font-size-xs: 12px;
-  --bt-font-size-sm: 14px;
-  --bt-font-size-md: 16px;
-  --bt-font-size-lg: 20px;
-  --bt-font-size-xl: 28px;
-  --bt-font-size-2xl: 36px;
-  --bt-font-size-3xl: 48px;
+    /* Backwards compatibility */
+    --bt-font-family: var(--bt-font-family-base);
 
-  --bt-font-weight-regular: 400;
-  --bt-font-weight-semibold: 600;
-  --bt-font-weight-bold: 700;
-  --bt-font-weight-black: 900;
+    /* Raw type scale */
+    --bt-font-size-xs: 12px;
+    --bt-font-size-sm: 14px;
+    --bt-font-size-md: 16px;
+    --bt-font-size-lg: 20px;
+    --bt-font-size-xl: 24px;
+    --bt-font-size-2xl: 36px;
+    --bt-font-size-3xl: 48px;
+    --bt-font-size-4xl: 60px;
+    --bt-font-size-5xl: 76px;
 
-  --bt-line-height-tight: 1.2;
-  --bt-line-height-normal: 1.4;
-  --bt-line-height-loose: 1.6;
+    /* Semantic type styles from Figma */
+    --bt-font-size-h1: 76px;
+    --bt-font-size-h2: 60px;
+    --bt-font-size-h3: 36px;
+    --bt-font-size-h4: 24px;
+    --bt-font-size-h5: 20px;
+    --bt-font-size-p: 16px;
+    --bt-font-size-category-title: 16px;
+    --bt-font-size-menu-button: 18px;
 
-  /* ================================
+    --bt-font-weight-regular: 400;
+    --bt-font-weight-semibold: 600;
+    --bt-font-weight-bold: 700;
+    --bt-font-weight-black: 900;
+
+    --bt-line-height-tight: 1.15;
+    --bt-line-height-normal: 1.4;
+    --bt-line-height-loose: 1.6;
+
+    --bt-letter-spacing-tight: -0.02em;
+    --bt-letter-spacing-normal: 0;
+
+    /* ================================
      SPACING SCALE
   ================================= */
 
-  --bt-space-1: 4px;
-  --bt-space-2: 8px;
-  --bt-space-3: 12px;
-  --bt-space-4: 16px;
-  --bt-space-5: 20px;
-  --bt-space-6: 24px;
-  --bt-space-8: 32px;
-  --bt-space-10: 40px;
-  --bt-space-12: 48px;
-  --bt-space-16: 64px;
-  --bt-space-20: 80px;
+    --bt-space-1: 4px;
+    --bt-space-2: 8px;
+    --bt-space-3: 12px;
+    --bt-space-4: 16px;
+    --bt-space-5: 20px;
+    --bt-space-6: 24px;
+    --bt-space-8: 32px;
+    --bt-space-10: 40px;
+    --bt-space-12: 48px;
+    --bt-space-16: 64px;
+    --bt-space-20: 80px;
 
-  /* ================================
+    /* ================================
      RADIUS
   ================================= */
 
-  --bt-radius-sm: 12px;
-  --bt-radius-md: 20px;
-  --bt-radius-lg: 28px;
+    --bt-radius-sm: 12px;
+    --bt-radius-md: 20px;
+    --bt-radius-lg: 24px;
 
-  /* ================================
+    /* ================================
      SHADOWS (Bluetab feel)
   ================================= */
 
-  --bt-shadow-card: 0 16px 40px rgba(31, 34, 45, 0.1);
-  --bt-shadow-soft: 0 24px 70px rgba(31, 34, 45, 0.12);
+    --bt-shadow-card: 0 0 40px rgba(31, 34, 45, 0.25);
+    --bt-shadow-soft: 0 0 40px rgba(31, 34, 45, 0.15);
+    /* Glow para hovers y efectos */
+    --bt-shadow-glow-blue: 0 0 40px rgba(33, 36, 146, 0.35);
+    --bt-shadow-glow-purple: 0 0 40px rgba(84, 38, 117, 0.35);
+    --bt-shadow-glow-orange: 0 0 40px rgba(224, 82, 6, 0.35);
 
-  /* Glow para hovers y efectos */
-  --bt-shadow-glow: 0 40px 120px rgba(84, 38, 117, 0.25);
-
-  /* ================================
+    /* ================================
      LAYOUT TOKENS
   ================================= */
 
-  --bt-container-max: 1180px;
-  --bt-section-padding-y: clamp(72px, 8vw, 128px);
+    --bt-container-max: 1280px;
+    --bt-section-padding-y: clamp(72px, 8vw, 128px);
 
-  /* ================================
+    /* ================================
      COMPONENT TOKENS
   ================================= */
 
-  /* Buttons */
-  --bt-button-height: 44px;
-  --bt-button-radius: 999px;
+    /* Buttons */
+    --bt-button-height: 44px;
+    --bt-button-radius: 999px;
 
-  /* Cards */
-  --bt-card-padding: var(--bt-space-8);
-  --bt-card-radius: var(--bt-radius-md);
+    /* Cards */
+    --bt-card-padding: var(--bt-space-8);
+    --bt-card-radius: var(--bt-radius-lg);
 
-  /* Transitions */
-  --bt-transition-fast: 180ms ease;
-  --bt-transition-medium: 280ms ease;
-  --bt-transition-slow: 400ms ease;
+    /* Transitions */
+    --bt-transition-fast: 180ms ease;
+    --bt-transition-medium: 280ms ease;
+    --bt-transition-slow: 400ms ease;
 }

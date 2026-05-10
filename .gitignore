@@ -12,4 +12,4 @@ wp-admin/
 wp-includes/
 
 *.sql
-*.zip
+*.zip``
