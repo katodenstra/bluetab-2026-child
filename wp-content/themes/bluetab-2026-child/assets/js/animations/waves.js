@@ -40,12 +40,11 @@
         },
 
         readiness: {
-            originX: 0.62,
-            ribbonWidth: 365,
-            ribbonDepth: 155,
-            startSpread: 22,
-            canvasWidth: '56%',
-            colors: ['#3c2582', '#542675', '#9b3c3d'],
+            colors: ['#31277e', '#542675'],
+        },
+
+        products: {
+            colors: ['#9b3c3d', '#e05206'],
         },
 
         ai: {
@@ -76,6 +75,13 @@
 
     function clamp(value, min, max) {
         return Math.max(min, Math.min(max, value));
+    }
+
+    function prefersReducedMotion() {
+        return (
+            document.documentElement.classList.contains('bt-reduced-motion') ||
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        );
     }
 
     function getGradientColor(colors, t, alpha) {
@@ -124,13 +130,40 @@
         return canvas;
     }
 
-    function initWave(container) {
+    function getResponsiveConfig(config) {
+        const width = window.innerWidth;
+
+        if (width <= 767) {
+            return {
+                ...config,
+                lineCount: 32,
+                pointsPerLine: 160,
+            };
+        }
+
+        if (width <= 980) {
+            return {
+                ...config,
+                lineCount: 48,
+                pointsPerLine: 200,
+            };
+        }
+
+        return {
+            ...config,
+            lineCount: 70,
+            pointsPerLine: 260,
+        };
+    }
+
+    function initWave(container, options = {}) {
         const variantName = container.dataset.waveVariant || 'generic';
         const variantConfig =
             WAVE_VARIANTS[variantName] || WAVE_VARIANTS.generic;
-        const config = mergeConfig(variantConfig);
+        const baseConfig = mergeConfig(variantConfig);
+        let config = getResponsiveConfig(baseConfig);
 
-        const canvas = createCanvas(container, config);
+        const canvas = options.canvas || createCanvas(container, config);
         const ctx = canvas.getContext('2d');
 
         if (!ctx) return;
@@ -139,12 +172,16 @@
         let height = 0;
         let dpr = 1;
         let animationFrame = null;
+        let isVisible = true;
+        let lastFrame = 0;
 
         const start = performance.now();
         const seed = Math.random() * 1000;
+        const frameInterval = 1000 / 30;
 
         function resize() {
-            dpr = Math.min(window.devicePixelRatio || 1, 2);
+            config = getResponsiveConfig(baseConfig);
+            dpr = Math.min(window.devicePixelRatio || 1, 1.5);
 
             const rect = canvas.getBoundingClientRect();
 
@@ -278,14 +315,17 @@
         }
 
         function draw(now) {
-            const prefersReducedMotion =
-                document.documentElement.classList.contains(
-                    'bt-reduced-motion',
-                );
-
-            if (prefersReducedMotion) {
+            if (prefersReducedMotion() || document.hidden || !isVisible) {
+                animationFrame = null;
                 return;
             }
+
+            if (now - lastFrame < frameInterval) {
+                animationFrame = requestAnimationFrame(draw);
+                return;
+            }
+
+            lastFrame = now;
 
             const elapsed = now - start;
             const time = elapsed * config.speed;
@@ -340,6 +380,15 @@
         }
 
         function startAnimation() {
+            if (
+                animationFrame ||
+                document.hidden ||
+                !isVisible ||
+                prefersReducedMotion()
+            ) {
+                return;
+            }
+
             resize();
             animationFrame = requestAnimationFrame(draw);
         }
@@ -347,16 +396,60 @@
         function stopAnimation() {
             if (animationFrame) {
                 cancelAnimationFrame(animationFrame);
+                animationFrame = null;
             }
         }
 
+        function handleVisibilityChange() {
+            if (document.hidden) {
+                stopAnimation();
+                return;
+            }
+
+            startAnimation();
+        }
+
+        let observer = null;
+
+        if ('IntersectionObserver' in window) {
+            observer = new IntersectionObserver(
+                (entries) => {
+                    const entry = entries[0];
+                    isVisible = Boolean(entry && entry.isIntersecting);
+
+                    if (isVisible) {
+                        startAnimation();
+                    } else {
+                        stopAnimation();
+                    }
+                },
+                {
+                    threshold: 0.01,
+                },
+            );
+
+            observer.observe(container);
+        }
+
         window.addEventListener('resize', resize);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
 
         startAnimation();
 
         return {
             resize,
-            stop: stopAnimation,
+            stop() {
+                stopAnimation();
+                window.removeEventListener('resize', resize);
+                document.removeEventListener(
+                    'visibilitychange',
+                    handleVisibilityChange,
+                );
+
+                if (observer) {
+                    observer.disconnect();
+                }
+            },
         };
     }
 
@@ -378,5 +471,27 @@
 
             initWave(container);
         });
+
+        const solutionContainers = document.querySelectorAll(
+            '.js-bt-solution-wave',
+        );
+
+        solutionContainers.forEach((container) => {
+            if (container.dataset.waveInitialized === 'true') return;
+
+            const canvas = container.querySelector('.bt-solution-wave__canvas');
+
+            if (!canvas) return;
+
+            container.dataset.waveInitialized = 'true';
+
+            initWave(container, { canvas });
+        });
     };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', window.initBluetabWaves);
+    } else {
+        window.initBluetabWaves();
+    }
 })();
