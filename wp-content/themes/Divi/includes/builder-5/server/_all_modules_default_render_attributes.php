@@ -1293,6 +1293,11 @@ return [
                     'desktop' => [
                         'value' => 'center'
                     ]
+                ],
+                'maxWidth' => [
+                    'desktop' => [
+                        'value' => '100%'
+                    ]
                 ]
             ]
         ],
@@ -3236,20 +3241,7 @@ return [
                 ]
             ]
         ],
-        'featuredImage' => [
-            'decoration' => [
-                'sizing' => [
-                    'desktop' => [
-                        'value' => [
-                            'alignment' => 'center',
-                            'width' => '100%',
-                            'maxWidth' => 'none',
-                            'height' => 'auto',
-                            'maxHeight' => 'none'
-                        ]
-                    ]
-                ]
-            ],
+        'image' => [
             'advanced' => [
                 'enabled' => [
                     'desktop' => [
@@ -3259,11 +3251,6 @@ return [
                 'placement' => [
                     'desktop' => [
                         'value' => 'below'
-                    ]
-                ],
-                'forceFullwidth' => [
-                    'desktop' => [
-                        'value' => 'on'
                     ]
                 ]
             ]
@@ -4001,6 +3988,27 @@ return [
                         'label' => 'Facebook',
                         'skypeUrl' => '',
                         'skypeAction' => 'call'
+                    ]
+                ]
+            ]
+        ]
+    ],
+    'svg' => [
+        'module' => [
+            'meta' => [
+                'adminLabel' => [
+                    'desktop' => [
+                        'value' => 'SVG'
+                    ]
+                ]
+            ]
+        ],
+        'svg' => [
+            'innerContent' => [
+                'desktop' => [
+                    'value' => [
+                        'sourceType' => 'code',
+                        'linkTarget' => 'off'
                     ]
                 ]
             ]
@@ -4939,15 +4947,6 @@ return [
                 'adminLabel' => [
                     'desktop' => [
                         'value' => 'Woo Product Images'
-                    ]
-                ]
-            ]
-        ],
-        'image' => [
-            'advanced' => [
-                'forceFullwidth' => [
-                    'desktop' => [
-                        'value' => 'off'
                     ]
                 ]
             ]

@@ -501,6 +501,10 @@ class WooCommerceProductsModule implements DependencyInterface {
 						[
 							'attrName'   => 'image',
 							'styleProps' => [
+								'background'     => [
+									'selector'  => "{$order_class}.et_pb_shop .et_shop_image > img, {$order_class}.et_pb_shop .et_shop_image .et_overlay",
+									'important' => true,
+								],
 								'advancedStyles' => [
 									[
 										'componentName' => 'divi/common',

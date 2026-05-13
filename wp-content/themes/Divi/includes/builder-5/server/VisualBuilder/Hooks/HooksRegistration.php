@@ -662,6 +662,37 @@ class HooksRegistration implements DependencyInterface {
 	}
 
 	/**
+	 * Filters the "real" file type of portability media files.
+	 *
+	 * This validates portability imports against image/video rules first, then
+	 * allows JSON files (used by Lottie assets) through the existing JSON validator.
+	 *
+	 * @since ??
+	 *
+	 * @param array  $checked_filetype_and_ext {
+	 *     Values for the extension, mime type, and corrected filename.
+	 *
+	 *     @type string|false $ext             File extension, or false if the file doesn't match a mime type.
+	 *     @type string|false $type            File mime type, or false if the file doesn't match a mime type.
+	 *     @type string|false $proper_filename File name with its correct extension, or false if it cannot be determined.
+	 * }
+	 * @param string $file                      Full path to the file.
+	 * @param string $filename                  The name of the file (may differ from $file due to
+	 *                                          $file being in a tmp directory).
+	 *
+	 * @return array
+	 */
+	public static function check_filetype_and_ext_portability_media( array $checked_filetype_and_ext, string $file, string $filename ): array {
+		$validated_image = self::check_filetype_and_ext_image( $checked_filetype_and_ext, $file, $filename );
+
+		if ( isset( $validated_image['ext'] ) && false !== $validated_image['ext'] ) {
+			return $validated_image;
+		}
+
+		return self::check_filetype_and_ext_json( $checked_filetype_and_ext, $file, $filename );
+	}
+
+	/**
 	 * Enable SVG uploads when SVG plugins are detected.
 	 *
 	 * This method ensures SVG files are properly supported in all contexts, including Visual Builder,

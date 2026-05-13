@@ -27,6 +27,11 @@
       "label": "Image or Icon",
       "selector": "{{selector}} .et_pb_main_blurb_image .et-pb-icon, {{selector}} .et_pb_main_blurb_image img",
       "supportsCustomAttributes": true,
+      "scriptDataProps": {
+        "animation": {
+          "selector": "{{selector}} .et_pb_main_blurb_image"
+        }
+      },
       "settings": {
         "innerContent": {
           "groupType": "group-items",
@@ -111,7 +116,7 @@
               "label": "Icon Color",
               "description": "Here you can define a custom color for your icon.",
               "render": true,
-              "priority": 10,
+              "priority": 2,
               "features": {
                 "dynamicContent": {
                   "type": "color"
@@ -132,7 +137,7 @@
               "description": "Here you can choose where to place the icon.",
               "category": "layout",
               "render": true,
-              "priority": 30,
+              "priority": 1,
               "features": {
                 "hover": false,
                 "sticky": false
@@ -155,58 +160,6 @@
           }
         },
         "decoration": {
-          "sizing": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImageIcon",
-              "priority": 52,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/sizing",
-                "props": {
-                  "attrName": "imageIcon.decoration.sizing",
-                  "grouped": true,
-                  "fieldLabel": "Image/Icon",
-                  "dynamicSubgroupHostLayoutStyle": "block",
-                  "fields": {
-                    "iconFontSize": {
-                      "attrName": "imageIcon.decoration.sizing",
-                      "subName": "iconFontSize",
-                      "defaultAttr": {
-                        "desktop": {
-                          "value": {
-                            "iconFontSize": "96px"
-                          }
-                        }
-                      },
-                      "label": "Icon Font Size",
-                      "description": "Control the size of the icon by increasing or decreasing the font size.",
-                      "priority": 1,
-                      "category": "font_option",
-                      "render": true,
-                      "features": {
-                        "dynamicContent": {
-                          "type": "number"
-                        }
-                      },
-                      "component": {
-                        "type": "field",
-                        "name": "divi/range",
-                        "props": {
-                          "cssProperty": "font-size",
-                          "defaultUnit": "px",
-                          "min": 1,
-                          "minLimit": 1,
-                          "max": 120
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "background": {
             "groupType": "group-item",
             "item": {
@@ -224,22 +177,6 @@
               }
             }
           },
-          "border": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImageIcon",
-              "priority": 60,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/border",
-                "props": {
-                  "grouped": true,
-                  "fieldLabel": "Image/Icon"
-                }
-              }
-            }
-          },
           "spacing": {
             "groupType": "group-item",
             "item": {
@@ -249,38 +186,6 @@
               "component": {
                 "type": "group",
                 "name": "divi/spacing",
-                "props": {
-                  "grouped": true,
-                  "fieldLabel": "Image/Icon"
-                }
-              }
-            }
-          },
-          "boxShadow": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImageIcon",
-              "priority": 60,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/box-shadow",
-                "props": {
-                  "grouped": true,
-                  "fieldLabel": "Image"
-                }
-              }
-            }
-          },
-          "filters": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImageIcon",
-              "priority": 60,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/filters",
                 "props": {
                   "grouped": true,
                   "fieldLabel": "Image/Icon"
@@ -309,6 +214,9 @@
       },
       "styleProps": {
         "selector": "{{selector}} .et-pb-icon, {{selector}} .et_pb_image_wrap",
+        "fit": {
+          "selector": "{{selector}} .et_pb_main_blurb_image img"
+        },
         "spacing": {
           "selector": "{{selector}} .et_pb_main_blurb_image .et_pb_only_image_mode_wrap, {{selector}} .et_pb_main_blurb_image .et-pb-icon",
           "important": true
@@ -346,7 +254,14 @@
         },
         "sizing": {
           "selector": "{{selector}} .et_pb_main_blurb_image .et_pb_only_image_mode_wrap, {{selector}} .et_pb_main_blurb_image .et-pb-icon",
-          "disableAlignmentStyles": true
+          "disableAlignmentStyles": true,
+          "propertySelectors": {
+            "desktop": {
+              "value": {
+                "aspect-ratio": "{{selector}} .et_pb_main_blurb_image img"
+              }
+            }
+          }
         }
       },
       "styleComponentsProps": {
@@ -428,7 +343,7 @@
           "important": true
         },
         "layout": {
-          "selector": "{{selector}} .et_pb_blurb_content"
+          "selector": "{{selector}}, {{selector}} .et_pb_blurb_content"
         }
       }
     },
@@ -596,11 +511,56 @@
         "groupName": "imageIcon",
         "multiElements": true,
         "component": {
-          "name": "divi/composite",
+          "name": "divi/image",
           "props": {
             "groupLabel": "Image & Icon",
+            "attrName": "imageIcon",
+            "grouped": true,
+            "presetGroup": "divi/image",
             "dynamicSubgroupHost": true,
-            "clipboardCategory": "style"
+            "clipboardCategory": "style",
+            "fields": {
+              "sizingGroup": {
+                "component": {
+                  "props": {
+                    "fields": {
+                      "iconFontSize": {
+                        "attrName": "imageIcon.decoration.sizing",
+                        "subName": "iconFontSize",
+                        "defaultAttr": {
+                          "desktop": {
+                            "value": {
+                              "iconFontSize": "96px"
+                            }
+                          }
+                        },
+                        "label": "Icon Font Size",
+                        "description": "Control the size of the icon by increasing or decreasing the font size.",
+                        "priority": 1,
+                        "category": "font_option",
+                        "render": true,
+                        "features": {
+                          "dynamicContent": {
+                            "type": "number"
+                          }
+                        },
+                        "component": {
+                          "type": "field",
+                          "name": "divi/range",
+                          "props": {
+                            "cssProperty": "font-size",
+                            "defaultUnit": "px",
+                            "min": 1,
+                            "minLimit": 1,
+                            "max": 120
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       },

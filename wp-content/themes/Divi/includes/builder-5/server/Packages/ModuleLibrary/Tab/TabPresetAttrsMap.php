@@ -796,6 +796,106 @@ class TabPresetAttrsMap {
 				'preset'   => [ 'style' ],
 				'subName'  => 'color',
 			],
+			'module.decoration.sizing__size'               => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'size',
+			],
+			'module.decoration.sizing__flexShrink'         => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'flexShrink',
+			],
+			'module.decoration.sizing__flexGrow'           => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'flexGrow',
+			],
+			'module.decoration.sizing__width'              => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'width',
+			],
+			'module.decoration.sizing__maxWidth'           => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'maxWidth',
+			],
+			'module.decoration.sizing__alignment'          => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'alignment',
+			],
+			'module.decoration.sizing__alignSelf'          => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'alignSelf',
+			],
+			'module.decoration.sizing__minHeight'          => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'minHeight',
+			],
+			'module.decoration.sizing__height'             => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'height',
+			],
+			'module.decoration.sizing__maxHeight'          => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'maxHeight',
+			],
+			'module.decoration.sizing__aspectRatio'        => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'aspectRatio',
+			],
+			'module.decoration.sizing__gridColumnSpan'     => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'gridColumnSpan',
+			],
+			'module.decoration.sizing__gridColumnStart'    => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'gridColumnStart',
+			],
+			'module.decoration.sizing__gridColumnEnd'      => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'gridColumnEnd',
+			],
+			'module.decoration.sizing__gridRowSpan'        => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'gridRowSpan',
+			],
+			'module.decoration.sizing__gridRowStart'       => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'gridRowStart',
+			],
+			'module.decoration.sizing__gridRowEnd'         => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'gridRowEnd',
+			],
+			'module.decoration.sizing__gridAlignSelf'      => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'gridAlignSelf',
+			],
+			'module.decoration.sizing__gridJustifySelf'    => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'gridJustifySelf',
+			],
+			'module.decoration.sizing__flexType'           => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [ 'html' ],
+				'subName'  => 'flexType',
+			],
 			'module.decoration.spacing__padding'           => [
 				'attrName' => 'module.decoration.spacing',
 				'preset'   => [ 'style' ],

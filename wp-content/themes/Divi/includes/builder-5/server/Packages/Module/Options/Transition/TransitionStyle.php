@@ -821,14 +821,13 @@ class TransitionStyle {
 					}
 				}
 
-				// List of height-related properties to support.
-				$height_properties = [ 'height', 'max-height', 'min-height' ];
+				// List of image-sizing and fit properties that are rendered on the image selector.
+				$image_selector_properties = [ 'height', 'max-height', 'min-height', 'aspect-ratio', 'object-fit', 'object-position' ];
 
-				// Check if `$image_selector` is not empty and CSS properties contains related properties to add. For now, the
-				// only property that has a relation with the image selector is `height`.
+				// Check if `$image_selector` is not empty and CSS properties contains related properties to add.
 				if ( ! empty( $image_selector ) && is_array( $css_properties ) && count( $css_properties ) > 0 ) {
-					// Find the intersection between $css_properties and $height_properties.
-					$matched_properties = array_intersect( $css_properties, $height_properties );
+					// Find the intersection between $css_properties and image selector-related properties.
+					$matched_properties = array_intersect( $css_properties, $image_selector_properties );
 
 					if ( ! empty( $matched_properties ) ) {
 						// Add all matched properties to transition data for the image selector.
@@ -1078,6 +1077,15 @@ class TransitionStyle {
 							break;
 						case 'minHeight':
 							$css_properties[] = 'min-height';
+							break;
+						case 'aspectRatio':
+							$css_properties[] = 'aspect-ratio';
+							break;
+						case 'objectFit':
+							$css_properties[] = 'object-fit';
+							break;
+						case 'objectPosition':
+							$css_properties[] = 'object-position';
 							break;
 						default:
 							$css_properties[] = $sizing_key;

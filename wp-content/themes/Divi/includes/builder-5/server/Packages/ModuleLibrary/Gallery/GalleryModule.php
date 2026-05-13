@@ -602,6 +602,18 @@ class GalleryModule implements DependencyInterface {
 						[
 							'attrName'   => 'image',
 							'styleProps' => [
+								'fit'            => [
+									'selector' => $args['orderClass'] . '.et_pb_gallery .et_pb_gallery_image img',
+								],
+								'sizing'         => [
+									'propertySelectors' => [
+										'desktop' => [
+											'value' => [
+												'aspect-ratio' => $args['orderClass'] . '.et_pb_gallery .et_pb_gallery_image img',
+											],
+										],
+									],
+								],
 								'attrsFilter'    => function ( $decoration_attrs ) use ( $attrs ) {
 									return GalleryModule::filter_image_decoration_attrs( $decoration_attrs, $attrs );
 								},

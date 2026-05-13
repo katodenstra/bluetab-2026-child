@@ -8,7 +8,9 @@
 
 namespace ET\Builder\Packages\ModuleLibrary\Slide;
 
+use ET\Builder\Packages\Module\Options\Fit\FitPresetAttrsMap;
 use ET\Builder\Packages\Module\Options\Loop\LoopPresetAttrsMap;
+use ET\Builder\Packages\Module\Options\Sizing\SizingPresetAttrsMap;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	die( 'Direct access forbidden.' );
@@ -1672,6 +1674,11 @@ class SlidePresetAttrsMap {
 				'preset'   => [ 'style' ],
 				'subName'  => 'maxHeight',
 			],
+			'button.decoration.sizing__aspectRatio'        => [
+				'attrName' => 'button.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'aspectRatio',
+			],
 			'button.decoration.sizing__flexType'           => [
 				'attrName' => 'button.decoration.sizing',
 				'preset'   => [ 'html' ],
@@ -1686,6 +1693,11 @@ class SlidePresetAttrsMap {
 				'attrName' => 'content.decoration.sizing',
 				'preset'   => [ 'style' ],
 				'subName'  => 'maxWidth',
+			],
+			'content.decoration.sizing__aspectRatio'       => [
+				'attrName' => 'content.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'aspectRatio',
 			],
 			'content.decoration.sizing__alignment'         => [
 				'attrName' => 'content.decoration.sizing',
@@ -2065,8 +2077,10 @@ class SlidePresetAttrsMap {
 			],
 		];
 
-		$loop_preset_attrs = LoopPresetAttrsMap::get_map( 'module.advanced.loop' );
+		$loop_preset_attrs  = LoopPresetAttrsMap::get_map( 'module.advanced.loop' );
+		$image_sizing_attrs = SizingPresetAttrsMap::get_map( 'image.decoration.sizing' );
+		$image_fit_attrs    = FitPresetAttrsMap::get_map( 'image.decoration.fit' );
 
-		return array_merge( $static_attrs, $loop_preset_attrs );
+		return array_merge( $static_attrs, $loop_preset_attrs, $image_sizing_attrs, $image_fit_attrs );
 	}
 }

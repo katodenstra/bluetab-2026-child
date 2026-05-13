@@ -41,7 +41,7 @@
           }
         },
         "layout": {
-          "selector": "{{selector}} .et_pb_menu_inner_container"
+          "selector": "{{selector}}, {{selector}} .et_pb_menu_inner_container"
         }
       },
       "settings": {

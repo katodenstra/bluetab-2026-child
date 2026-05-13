@@ -941,8 +941,7 @@ class AttributeMigration extends MigrationContentBase {
 
 			if ( $changes_made ) {
 				// Serialize the flat objects back into the content.
-				$blocks      = MigrationUtils::flat_objects_to_blocks( $flat_objects );
-				$new_content = MigrationUtils::serialize_blocks( $blocks );
+				$new_content = MigrationUtils::serialize_flat_objects( $flat_objects );
 			} else {
 				$new_content = $content;
 			}

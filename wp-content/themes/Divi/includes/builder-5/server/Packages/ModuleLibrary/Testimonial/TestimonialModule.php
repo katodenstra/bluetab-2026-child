@@ -20,12 +20,15 @@ use ET\Builder\FrontEnd\Module\Script;
 use ET\Builder\FrontEnd\Module\Style;
 use ET\Builder\Packages\Module\Layout\Components\ModuleElements\ModuleElements;
 use ET\Builder\Packages\Module\Layout\Components\MultiView\MultiViewScriptData;
+use ET\Builder\Packages\Module\Layout\Components\StyleCommon\CommonStyle;
 use ET\Builder\Packages\Module\Module;
+use ET\Builder\Packages\Module\Options\BoxShadow\BoxShadowClassnames;
 use ET\Builder\Packages\Module\Options\Css\CssStyle;
 use ET\Builder\Packages\Module\Options\Element\ElementClassnames;
 use ET\Builder\Packages\Module\Options\Element\ElementComponents;
 use ET\Builder\Packages\Module\Options\Text\TextClassnames;
 use ET\Builder\Packages\ModuleLibrary\ModuleRegistration;
+use ET\Builder\Packages\ModuleLibrary\Common\ImageWrapperAnimation;
 use ET\Builder\Packages\ModuleLibrary\Testimonial\TestimonialPresetAttrsMap;
 use ET\Builder\Packages\ModuleUtils\ChildrenUtils;
 use ET\Builder\Packages\ModuleUtils\ModuleUtils;
@@ -92,31 +95,44 @@ class TestimonialModule implements DependencyInterface {
 	 * ```
 	 */
 	public static function render_callback( array $attrs, string $child_modules_content, WP_Block $block, ModuleElements $elements, array $default_printed_style_attrs ): string {
+		$portrait_image_url   = $attrs['portrait']['innerContent']['desktop']['value']['src'] ?? $attrs['portrait']['innerContent']['desktop']['value']['url'] ?? '';
+		$portrait_attr        = ImageWrapperAnimation::normalize_inner_content_src( $attrs['portrait'] ?? [] );
+		$portrait_render_attr = ImageWrapperAnimation::render_attr_without_animation( $portrait_attr );
+
 		// Portrait.
 		// phpcs:ignore ET.Comments.Todo.TodoFound -- Legacy TODO: May not be tracked in GitHub issues yet. Preserve for future tracking/removal.
 		// TODO feat(D5, Frontend Rendering): This needs to be abstracted into its own component.
 		$portrait = $elements->render(
 			[
-				'attributes'    => [
-					'class' => 'et_pb_testimonial_portrait',
-					'style' => [
-						'background-image' => [
-							'attr'          => $attrs['portrait']['innerContent'] ?? [],
-							'subName'       => 'url',
-							'valueResolver' => function ( $value ) {
-								return 'url(' . ( SanitizerUtility::sanitize_image_src( $value ) ) . ')';
-							},
-							'selector'      => '{{selector}} .et_pb_testimonial_portrait',
-						],
-					],
+				'attrName'     => 'portrait',
+				'elementAttr'  => $portrait_render_attr,
+				'tagName'      => 'img',
+				'attributes'   => [
+					'alt' => '',
+					'src' => SanitizerUtility::sanitize_image_src( $portrait_image_url ),
 				],
-				'hiddenIfFalsy' => [
-					'attr'     => $attrs['portrait']['innerContent'] ?? [],
-					'subName'  => 'url',
-					'selector' => '{{selector}} .et_pb_testimonial_portrait',
-				],
+				'skipChildren' => true,
 			]
 		);
+
+		$portrait = '' !== $portrait ? HTMLUtility::render(
+			[
+				'tag'               => 'div',
+				'attributes'        => [
+					'class' => HTMLUtility::classnames(
+						'et_pb_testimonial_portrait',
+						ImageWrapperAnimation::wrapper_animation_classname( $portrait_attr ),
+						BoxShadowClassnames::has_overlay( $attrs['portrait']['decoration']['boxShadow'] ?? [] )
+					),
+				],
+				'childrenSanitizer' => 'et_core_esc_previously',
+				'children'          => $elements->style_components(
+					[
+						'attrName' => 'portrait',
+					]
+				) . $portrait,
+			]
+		) : '';
 
 		// Content.
 		$content = $elements->render(
@@ -339,7 +355,7 @@ class TestimonialModule implements DependencyInterface {
 
 		// D4 FE outputs `et_pb_testimonial_no_image` class even if there's a image, which is wrong behavior
 		// and that interferes with the D5 Responsive Content. So, we need to add the class only if there's no image.
-		$portrait_image = $attrs['portrait']['innerContent']['desktop']['value']['url'] ?? '';
+		$portrait_image = $attrs['portrait']['innerContent']['desktop']['value']['src'] ?? $attrs['portrait']['innerContent']['desktop']['value']['url'] ?? '';
 		$classnames_instance->add( 'et_pb_testimonial_no_image', empty( $portrait_image ) );
 
 		// Text options.
@@ -437,7 +453,8 @@ class TestimonialModule implements DependencyInterface {
 								return 'off' === ( $value['show'] ?? 'on' ) ? 'add' : 'remove'; // Add class `et_pb_icon_off` if `quoteIcon` value is `off`.
 							}
 
-							return '' === ( $value['url'] ?? '' ) ? 'add' : 'remove'; // Add class `et_pb_testimonial_no_image` if `portrait.image.url` value is empty.
+							$portrait_image = $value['src'] ?? $value['url'] ?? '';
+							return '' === $portrait_image ? 'add' : 'remove'; // Add class `et_pb_testimonial_no_image` if portrait image source is empty.
 						},
 					],
 				],
@@ -571,6 +588,36 @@ class TestimonialModule implements DependencyInterface {
 		return $style_declarations->value();
 	}
 
+	/**
+	 * Testimonial portrait image aspect-ratio companion CSS declarations.
+	 *
+	 * @since ??
+	 *
+	 * @param array $params {
+	 *     An array of parameters.
+	 *
+	 *     @type string $selector   Selector.
+	 *     @type array  $attr       Attribute.
+	 *     @type bool   $important  Important.
+	 *     @type string $returnType Return type.
+	 * }
+	 *
+	 * @return string
+	 */
+	public static function testimonial_portrait_aspect_ratio_style_declaration( array $params ): string {
+		$attr_value   = $params['attrValue'] ?? [];
+		$aspect_ratio = is_array( $attr_value ) ? $attr_value['aspectRatio'] ?? null : null;
+
+		if ( ! is_array( $aspect_ratio ) || ( empty( $aspect_ratio['width'] ) && empty( $aspect_ratio['height'] ) ) ) {
+			return '';
+		}
+
+		$declarations = new StyleDeclarations( $params );
+		$declarations->add( 'height', 'auto' );
+
+		return $declarations->value();
+	}
+
 
 	/**
 	 * Load Testimonial module styles.
@@ -616,11 +663,34 @@ class TestimonialModule implements DependencyInterface {
 	 * ```
 	 */
 	public static function module_styles( array $args ): void {
-		$attrs    = $args['attrs'] ?? [];
-		$elements = $args['elements'];
-		$settings = $args['settings'] ?? [];
+		$attrs       = $args['attrs'] ?? [];
+		$elements    = $args['elements'];
+		$settings    = $args['settings'] ?? [];
+		$order_class = $args['orderClass'] ?? '';
 
-		$default_printed_style_attrs = $args['defaultPrintedStyleAttrs'] ?? [];
+		$default_printed_style_attrs                     = $args['defaultPrintedStyleAttrs'] ?? [];
+		$portrait_sizing_attr                            = $attrs['portrait']['decoration']['sizing'] ?? [];
+		$has_portrait_height                             = ModuleUtils::has_value(
+			$portrait_sizing_attr,
+			[
+				'subName' => 'height',
+			]
+		);
+		$has_portrait_aspect_ratio                       = ModuleUtils::has_value(
+			$portrait_sizing_attr,
+			[
+				'subName'       => 'aspectRatio',
+				'inheritedMode' => false,
+				'valueResolver' => function ( $value ): bool {
+					if ( ! is_array( $value ) ) {
+						return false;
+					}
+
+					return ! empty( $value['width'] ) || ! empty( $value['height'] );
+				},
+			]
+		);
+		$should_render_portrait_aspect_ratio_auto_height = $has_portrait_aspect_ratio && ! $has_portrait_height;
 
 		Style::add(
 			[
@@ -681,9 +751,25 @@ class TestimonialModule implements DependencyInterface {
 					// Portrait.
 					$elements->style(
 						[
-							'attrName' => 'portrait',
+							'attrName'   => 'portrait',
+							'styleProps' => [
+								'fit' => [
+									'selector' => "{$order_class} .et_pb_testimonial_portrait img",
+								],
+							],
 						]
 					),
+					$should_render_portrait_aspect_ratio_auto_height ? CommonStyle::style(
+						[
+							'selector'               => "{$order_class} .et_pb_testimonial_portrait",
+							'attr'                   => $portrait_sizing_attr,
+							'important'              => true,
+							'declarationFunction'    => [ self::class, 'testimonial_portrait_aspect_ratio_style_declaration' ],
+							'orderClass'             => $order_class,
+							'isInsideStickyModule'   => $elements->get_is_inside_sticky_module(),
+							'stickyParentOrderClass' => $elements->get_sticky_parent_order_class(),
+						]
+					) : null,
 					// Title.
 					$elements->style(
 						[

@@ -37,5 +37,16 @@
         }
       }
     }
+  },
+  "image": {
+    "decoration": {
+      "sizing": {
+        "desktop": {
+          "value": {
+            "alignSelf": "stretch"
+          }
+        }
+      }
+    }
   }
 }

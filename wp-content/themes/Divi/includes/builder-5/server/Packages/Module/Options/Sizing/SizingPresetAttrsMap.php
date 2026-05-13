@@ -121,6 +121,11 @@ class SizingPresetAttrsMap {
 				'preset'   => [ 'style' ],
 				'subName'  => 'maxHeight',
 			],
+			"{$attr_name}__aspectRatio"       => [
+				'attrName' => $attr_name,
+				'preset'   => [ 'style' ],
+				'subName'  => 'aspectRatio',
+			],
 			"{$attr_name}__flexType"        => [
 				'attrName' => $attr_name,
 				'preset'   => [ 'html' ],

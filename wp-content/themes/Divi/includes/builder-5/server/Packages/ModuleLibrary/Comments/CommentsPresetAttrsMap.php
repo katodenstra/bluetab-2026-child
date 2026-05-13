@@ -13,6 +13,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use ET\Builder\Packages\Module\Options\FormField\FieldDecorationPresetAttrsMap;
+use ET\Builder\Packages\Module\Options\Fit\FitPresetAttrsMap;
+use ET\Builder\Packages\Module\Options\Sizing\SizingPresetAttrsMap;
 
 
 /**
@@ -161,6 +163,7 @@ class CommentsPresetAttrsMap {
 			'button.decoration.button.decoration.sizing__size',
 			'button.decoration.button.decoration.sizing__height',
 			'button.decoration.button.decoration.sizing__maxHeight',
+			'button.decoration.button.decoration.sizing__aspectRatio',
 			'button.decoration.button.decoration.sizing__flexType',
 		];
 
@@ -420,7 +423,9 @@ class CommentsPresetAttrsMap {
 					'preset'   => [ 'html' ],
 					'subName'  => 'htmlBefore',
 				],
-			]
+			],
+			SizingPresetAttrsMap::get_map( 'image.decoration.sizing' ),
+			FitPresetAttrsMap::get_map( 'image.decoration.fit' )
 		);
 	}
 }

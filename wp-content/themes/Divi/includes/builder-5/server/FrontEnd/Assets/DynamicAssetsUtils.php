@@ -1530,6 +1530,9 @@ class DynamicAssetsUtils {
 				'css' => "{$prefix}/css/social_media_follow{$suffix}.css",
 			],
 			'divi/social-media-follow-network'          => [],
+			'divi/svg'                                  => [
+				'css' => "{$prefix}/css/svg{$suffix}.css",
+			],
 			'divi/tab'                                  => [],
 			'divi/tabs'                                 => [
 				'css' => "{$prefix}/css/tabs{$suffix}.css",

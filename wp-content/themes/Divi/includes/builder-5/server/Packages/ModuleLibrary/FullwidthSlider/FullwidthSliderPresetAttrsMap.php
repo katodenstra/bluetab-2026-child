@@ -1577,6 +1577,11 @@ class FullwidthSliderPresetAttrsMap {
 				'preset'   => [ 'style' ],
 				'subName'  => 'maxHeight',
 			],
+			'button.decoration.sizing__aspectRatio'        => [
+				'attrName' => 'button.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'aspectRatio',
+			],
 			'button.decoration.sizing__flexType'           => [
 				'attrName' => 'button.decoration.sizing',
 				'preset'   => [ 'html' ],
@@ -1626,6 +1631,13 @@ class FullwidthSliderPresetAttrsMap {
 				'attrName' => 'module.decoration.sizing',
 				'preset'   => [ 'style' ],
 				'subName'  => 'maxHeight',
+			],
+			'module.decoration.sizing__aspectRatio' => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [
+					'style',
+				],
+				'subName'  => 'aspectRatio',
 			],
 			'module.decoration.sizing__alignSelf'          => [
 				'attrName' => 'module.decoration.sizing',

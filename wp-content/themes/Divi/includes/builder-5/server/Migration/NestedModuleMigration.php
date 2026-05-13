@@ -486,8 +486,7 @@ class NestedModuleMigration extends MigrationContentBase {
 
 			if ( $changes_made ) {
 				// Serialize the flat objects back into the content.
-				$blocks      = MigrationUtils::flat_objects_to_blocks( $flat_objects );
-				$new_content = MigrationUtils::serialize_blocks( $blocks );
+				$new_content = MigrationUtils::serialize_flat_objects( $flat_objects );
 			} else {
 				$new_content = $content;
 			}
@@ -822,10 +821,10 @@ class NestedModuleMigration extends MigrationContentBase {
 	 * - If NOT in a full-width column (1_1 or 4_4), set flex direction to column
 	 * - If in a full-width column, no migration is applied
 	 *
-	 * NOTE: This migration respects block layout set by Conversion.php. If display
-	 * is already set to 'block', this migration is skipped to preserve Divi 4 behavior.
-	 * Person modules should use block layout for the module wrapper, with internal
-	 * flex structure handled via CSS variables (--flex-direction: row).
+	 * NOTE: This migration respects layout set by Conversion.php for Person modules.
+	 * If display is 'block', migration is skipped (#47406). If display is 'flex' with
+	 * row or row-reverse (D4→D5 conversion default), migration is skipped so nested
+	 * migration does not replace horizontal layout with flex column (#49701).
 	 *
 	 * @since ??
 	 *
@@ -854,15 +853,18 @@ class NestedModuleMigration extends MigrationContentBase {
 			return null;
 		}
 
-		// Check if layout display is already set to 'block'.
-		// Conversion.php sets 'block' layout for Person modules to preserve Divi 4 behavior.
-		// We must respect this and not override it, as array_replace_recursive would override
-		// the block layout with flex layout, causing visual differences from Divi 4.
-		$existing_display = $module_data['props']['attrs']['module']['decoration']['layout']['desktop']['value']['display'] ?? null;
+		// Respect layout already set by Conversion.php or saved content.
+		$layout_value       = $module_data['props']['attrs']['module']['decoration']['layout']['desktop']['value'] ?? [];
+		$existing_display   = $layout_value['display'] ?? null;
+		$existing_direction = $layout_value['flexDirection'] ?? null;
 
-		// Only apply migration if display is not already set to 'block'.
-		// This preserves block layout set by Conversion.php during D4→D5 conversion.
+		// Preserve block layout (#47406).
 		if ( 'block' === $existing_display ) {
+			return null;
+		}
+
+		// Preserve flex row from D4→D5 conversion; do not replace with flex column (#49701).
+		if ( 'flex' === $existing_display && ( 'row' === $existing_direction || 'row-reverse' === $existing_direction ) ) {
 			return null;
 		}
 

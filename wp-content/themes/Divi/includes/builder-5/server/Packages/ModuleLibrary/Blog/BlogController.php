@@ -172,12 +172,18 @@ class BlogController extends RESTController {
 			$query_args['et_is_home'] = true;
 		}
 
+		$blog_pagination_base_offset = 0;
+
 		if ( '' !== $args['offset'] && ! empty( $args['offset'] ) ) {
 			/**
 			 * Offset + pagination don't play well. Manual offset calculation required.
 			 *
 			 * @see: https://codex.wordpress.org/Making_Custom_Queries_using_Offset_and_Pagination.
 			 */
+			$blog_pagination_base_offset = (int) $args['offset'];
+
+			$query_args[ BlogModule::BLOG_PAGINATION_BASE_OFFSET_QUERY_VAR ] = $blog_pagination_base_offset;
+
 			if ( $args['paged'] > 1 ) {
 				$query_args['offset'] = ( ( $args['paged'] - 1 ) * $args['posts_per_page'] ) + $args['offset'];
 			} else {
@@ -197,7 +203,17 @@ class BlogController extends RESTController {
 		}
 
 		// Get query.
-		$query = new \WP_Query( $query_args );
+		if ( 0 < $blog_pagination_base_offset ) {
+			add_filter( 'found_posts', [ BlogModule::class, 'filter_found_posts_for_blog_offset' ], 10, 2 );
+		}
+
+		try {
+			$query = new \WP_Query( $query_args );
+		} finally {
+			if ( 0 < $blog_pagination_base_offset ) {
+				remove_filter( 'found_posts', [ BlogModule::class, 'filter_found_posts_for_blog_offset' ], 10 );
+			}
+		}
 
 		$sticky_posts = get_option( 'sticky_posts' );
 

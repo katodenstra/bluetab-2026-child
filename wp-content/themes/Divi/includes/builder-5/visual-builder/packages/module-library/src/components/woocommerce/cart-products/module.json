@@ -902,98 +902,34 @@
       "selector": "{{selector}} table.cart img",
       "settings": {
         "decoration": {
-          "border": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "priority": 20,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/border",
-                "props": {
-                  "grouped": true,
-                  "fieldLabel": "Image"
-                }
+          "image": {
+            "panel": "design",
+            "groupType": "group",
+            "groupName": "image",
+            "priority": 10,
+            "component": {
+              "type": "group",
+              "name": "divi/image",
+              "props": {
+                "attrName": "image",
+                "groupLabel": "Image",
+                "grouped": true,
+                "dynamicSubgroupHost": true,
+                "presetGroup": "divi/image"
               }
             }
-          },
-          "spacing": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "attrName": "image.decoration.spacing",
-              "priority": 30,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/spacing",
-                "props": {
-                  "grouped": true,
-                  "fieldLabel": "Image"
-                }
-              }
-            }
-          },
-          "filters": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "priority": 20,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/filters",
-                "props": {
-                  "grouped": true,
-                  "fieldLabel": "Image"
-                }
-              }
-            }
-          },
-          "sizing": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designSizing",
-              "attrName": "image.decoration.sizing",
-              "priority": 10,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/sizing",
-                "props": {
-                  "grouped": false,
-                  "fieldLabel": "Image",
-                  "fields": {
-                    "maxWidth": {
-                      "render": true,
-                      "label": "Image Width",
-                      "description": "Adjust the width of the image within the table.",
-                      "category": "layout"
-                    },
-                    "alignment": {
-                      "render": false
-                    },
-                    "alignSelf": {
-                      "render": false
-                    },
-                    "size": {
-                      "render": false
-                    },
-                    "width": {
-                      "render": false
-                    },
-                    "height": {
-                      "render": false
-                    },
-                    "minHeight": {
-                      "render": false
-                    },
-                    "maxHeight": {
-                      "render": false
-                    }
-                  }
-                }
+          }
+        }
+      },
+      "styleProps": {
+        "fit": {
+          "selector": "{{selector}} table.cart img"
+        },
+        "sizing": {
+          "propertySelectors": {
+            "desktop": {
+              "value": {
+                "aspect-ratio": "{{selector}} table.cart img"
               }
             }
           }
@@ -1457,20 +1393,6 @@
           "name": "divi/composite",
           "props": {
             "groupLabel": "Remove Icon"
-          }
-        }
-      },
-      "designImage": {
-        "panel": "design",
-        "priority": 50,
-        "groupName": "image",
-        "multiElements": true,
-        "component": {
-          "name": "divi/composite",
-          "props": {
-            "groupLabel": "Image",
-            "presetGroup": "divi/image",
-            "dynamicSubgroupHost": true
           }
         }
       },

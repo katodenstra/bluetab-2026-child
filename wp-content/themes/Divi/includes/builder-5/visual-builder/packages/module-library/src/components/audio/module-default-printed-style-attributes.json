@@ -36,5 +36,16 @@
         }
       }
     }
+  },
+  "image": {
+    "decoration": {
+      "fit": {
+        "desktop": {
+          "value": {
+            "objectFit": "cover"
+          }
+        }
+      }
+    }
   }
 }

@@ -603,6 +603,18 @@ class WooCommerceCartProductsModule implements DependencyInterface {
 						[
 							'attrName'   => 'image',
 							'styleProps' => [
+								'fit'            => [
+									'selector' => "{$order_class} table.cart img",
+								],
+								'sizing'         => [
+									'propertySelectors' => [
+										'desktop' => [
+											'value' => [
+												'aspect-ratio' => "{$order_class} table.cart img",
+											],
+										],
+									],
+								],
 								'advancedStyles' => [
 									[
 										'componentName' => 'divi/common',
@@ -967,7 +979,7 @@ class WooCommerceCartProductsModule implements DependencyInterface {
 	 *
 	 * @return bool
 	 */
-	private static function should_swap_divi_cart_template( array $conditional_tags ): bool {
+	private static function _should_swap_divi_cart_template( array $conditional_tags ): bool {
 		if ( Conditions::is_rest_api_request() || is_et_pb_preview() ) {
 			return true;
 		}
@@ -1005,7 +1017,7 @@ class WooCommerceCartProductsModule implements DependencyInterface {
 			5
 		);
 
-		if ( self::should_swap_divi_cart_template( $conditional_tags ) ) {
+		if ( self::_should_swap_divi_cart_template( $conditional_tags ) ) {
 			add_filter(
 				'wc_get_template',
 				[ self::class, 'swap_template' ],
@@ -1033,7 +1045,7 @@ class WooCommerceCartProductsModule implements DependencyInterface {
 			[ self::class, 'swap_quantity_input_template' ]
 		);
 
-		if ( self::should_swap_divi_cart_template( $conditional_tags ) ) {
+		if ( self::_should_swap_divi_cart_template( $conditional_tags ) ) {
 			remove_filter(
 				'wc_get_template',
 				[ self::class, 'swap_template' ]

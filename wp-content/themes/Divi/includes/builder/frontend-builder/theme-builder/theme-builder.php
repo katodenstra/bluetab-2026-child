@@ -996,6 +996,32 @@ function et_theme_builder_get_template_settings_options_for_archive_pages() {
 }
 
 /**
+ * Execute a Theme Builder assignment-settings callback using a consistent locale.
+ *
+ * @since 5.5.1
+ *
+ * @param callable $callback Callback used to generate assignment settings data.
+ *
+ * @return mixed
+ */
+function et_theme_builder_execute_with_assignment_settings_locale( $callback ) {
+	$disable_translations = function_exists( 'et_get_option' ) ? et_get_option( 'divi_disable_translations', 'off' ) : 'off';
+	$locale_switched      = false;
+
+	if ( 'on' === $disable_translations && function_exists( 'switch_to_locale' ) ) {
+		$locale_switched = switch_to_locale( 'en_US' );
+	}
+
+	try {
+		return $callback();
+	} finally {
+		if ( $locale_switched && function_exists( 'restore_previous_locale' ) ) {
+			restore_previous_locale();
+		}
+	}
+}
+
+/**
  * Get array of template setting options.
  * Settings that have children should have a trailing ET_THEME_BUILDER_SETTING_SEPARATOR in their id.
  * Settings that have children should have their id be unique even without the trailing ET_THEME_BUILDER_SETTING_SEPARATOR.

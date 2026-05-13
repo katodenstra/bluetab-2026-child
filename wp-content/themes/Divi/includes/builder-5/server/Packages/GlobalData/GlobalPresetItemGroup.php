@@ -229,6 +229,118 @@ class GlobalPresetItemGroup extends GlobalPresetItem {
 	}
 
 	/**
+	 * Read attribute value from array path.
+	 *
+	 * @since ??
+	 *
+	 * @param array $attrs The source attributes.
+	 * @param array $property_path Attribute path.
+	 *
+	 * @return mixed|null
+	 */
+	private static function _get_attr_from_path( array $attrs, array $property_path ) {
+		$missing = new \stdClass();
+		$value   = ArrayUtility::get_value_by_array_path( $attrs, $property_path, $missing );
+
+		return $missing === $value ? null : $value;
+	}
+
+	/**
+	 * Resolve value from canonical path with root-alias fallback.
+	 *
+	 * Some persisted group presets can store values under root aliases
+	 * (for example, `designSizing.*`) while canonical metadata resolves to
+	 * `module.*`. Prefer alias path first to avoid dropping edited values.
+	 *
+	 * @since ??
+	 *
+	 * @param array  $attrs Source attributes.
+	 * @param array  $canonical_path Canonical path segments.
+	 * @param string $root_group_id Root group identifier.
+	 *
+	 * @return mixed|null
+	 */
+	private static function _get_attr_from_canonical_or_root_alias( array $attrs, array $canonical_path, string $root_group_id ) {
+		if ( '' === $root_group_id || str_contains( $root_group_id, '.' ) || 1 >= count( $canonical_path ) ) {
+			return self::_get_attr_from_path( $attrs, $canonical_path );
+		}
+
+		$canonical_root = $canonical_path[0];
+		$alias_path     = array_merge( [ $root_group_id ], array_slice( $canonical_path, 1 ) );
+		$alias_attr     = self::_get_attr_from_path( $attrs, $alias_path );
+
+		if ( $canonical_root !== $root_group_id && null !== $alias_attr ) {
+			return $alias_attr;
+		}
+
+		$canonical_attr = self::_get_attr_from_path( $attrs, $canonical_path );
+
+		return null !== $canonical_attr ? $canonical_attr : $alias_attr;
+	}
+
+	/**
+	 * Normalize root-group alias path to canonical attr path.
+	 *
+	 * @since ??
+	 *
+	 * @param string $attr_name Source attribute path.
+	 * @param string $group_id Source group id.
+	 * @param string $module_name Source module name.
+	 *
+	 * @return string
+	 */
+	private static function _normalize_root_group_alias_to_canonical_attr_name( string $attr_name, string $group_id, string $module_name ): string {
+		if ( '' === $attr_name || '' === $group_id || str_contains( $group_id, '.' ) || ! str_contains( $attr_name, '.' ) ) {
+			return $attr_name;
+		}
+
+		$canonical_attr_names = array_values(
+			array_filter(
+				GlobalPresetItemGroupAttrNameResolver::get_attr_names_by_group( $module_name, $group_id ),
+				function ( $candidate ) use ( $group_id ) {
+					return is_string( $candidate ) && str_contains( $candidate, '.' ) && $candidate !== $group_id;
+				}
+			)
+		);
+		$attr_name_parts      = explode( '.', $attr_name );
+		$canonical_attr_name  = ArrayUtility::find(
+			$canonical_attr_names,
+			function ( $candidate ) use ( $attr_name_parts, $group_id ) {
+				$canonical_parts = explode( '.', $candidate );
+				return count( $attr_name_parts ) > 1
+					&& count( $canonical_parts ) > 1
+					&& $canonical_parts[0] !== $group_id
+					&& $attr_name_parts[1] === $canonical_parts[1];
+			}
+		);
+		$canonical_attr_name  = ( ! is_string( $canonical_attr_name ) || '' === $canonical_attr_name )
+			? ( $canonical_attr_names[0] ?? '' )
+			: $canonical_attr_name;
+
+		if ( '' === $canonical_attr_name ) {
+			return $attr_name;
+		}
+
+		$canonical_parts     = explode( '.', $canonical_attr_name );
+		$parts_count         = count( $canonical_parts );
+		$has_root_compatible = count( $attr_name_parts ) > 1
+			&& $parts_count > 1
+			&& $attr_name_parts[1] === $canonical_parts[1];
+		$has_full_compatible = count( $attr_name_parts ) >= $parts_count
+			&& implode( '.', array_slice( $attr_name_parts, 1, $parts_count - 1 ) ) === implode( '.', array_slice( $canonical_parts, 1 ) );
+
+		if ( ! $has_root_compatible ) {
+			return $attr_name;
+		}
+
+		if ( $has_full_compatible ) {
+			return GlobalPresetItemGroupAttrNameResolver::replace_attr_name_prefix( $attr_name, $canonical_attr_name );
+		}
+
+		return GlobalPresetItemGroupAttrNameResolver::replace_attr_name_prefix( $attr_name, $canonical_parts[0] );
+	}
+
+	/**
 	 * Matches and processes attributes based on group IDs.
 	 *
 	 * This function checks if the provided attributes array matches certain conditions
@@ -271,8 +383,16 @@ class GlobalPresetItemGroup extends GlobalPresetItem {
 		// This ensures all sibling properties are included in CSS generation.
 		$normalized_group_id = $group_id;
 		$is_button_group     = 'divi/button' === $data_group_name;
+		$is_image_root_hosts = ! str_contains( $group_id, '.' )
+			&& ! str_contains( $data_group_id, '.' )
+			&& 1 === preg_match( '/image/i', $group_id )
+			&& 1 === preg_match( '/image/i', $data_group_id );
+		$is_image_group      = 'divi/image' === $data_group_name || $is_image_root_hosts;
 		if ( $is_button_group && str_ends_with( $group_id, '.decoration.button' ) ) {
 			$normalized_group_id = preg_replace( '/\.decoration\.button$/', '', $group_id );
+		}
+		if ( $is_image_group && str_ends_with( $group_id, '.decoration.image' ) ) {
+			$normalized_group_id = preg_replace( '/\.decoration\.image$/', '', $group_id );
 		}
 
 		// Use normalizedGroupId to determine if we should use the shortcut or call get_attr_names_by_group.
@@ -300,7 +420,31 @@ class GlobalPresetItemGroup extends GlobalPresetItem {
 		if ( $is_button_group && str_ends_with( $data_group_id, '.decoration.button' ) ) {
 			$normalized_data_group_id = preg_replace( '/\.decoration\.button$/', '', $data_group_id );
 		}
+		if ( $is_image_group && str_ends_with( $data_group_id, '.decoration.image' ) ) {
+			$normalized_data_group_id = preg_replace( '/\.decoration\.image$/', '', $data_group_id );
+		}
 		$data_primary_attr_name = $this->get_data_primary_attr_name() ?? '';
+
+		$is_image_root_to_root_mapping = $is_image_group
+			&& ! str_contains( $normalized_group_id, '.' )
+			&& ! str_contains( $normalized_data_group_id, '.' );
+
+		if ( $is_image_root_to_root_mapping ) {
+			$source_image_attr = ArrayUtility::get_value_by_array_path( $attrs, explode( '.', $normalized_data_group_id ) );
+
+			if ( null !== $source_image_attr ) {
+				return $this->_maybe_append_dynamic_option_groups(
+					$attrs,
+					GlobalPresetItemGroupUtils::maybe_set_attrs(
+						[
+							'attr'         => $source_image_attr,
+							'propertyPath' => explode( '.', $normalized_group_id ),
+							'accumulator'  => [],
+						]
+					)
+				);
+			}
+		}
 
 		if ( $attr_names_merged ) {
 			// Normalize $data_group_id for comparison (handle -id-classes suffix).
@@ -309,9 +453,9 @@ class GlobalPresetItemGroup extends GlobalPresetItem {
 			if ( $data_module_name === $module_name && $normalized_data_group_id === $normalized_group_id ) {
 				$resolved_attrs = array_reduce(
 					$attr_names_merged,
-					function ( array $accumulator, string $attr_name ) use ( $attrs ): array {
+					function ( array $accumulator, string $attr_name ) use ( $attrs, $normalized_group_id ): array {
 						$property_path = explode( '.', $attr_name );
-						$attr          = ArrayUtility::get_value_by_array_path( $attrs, $property_path );
+						$attr          = self::_get_attr_from_canonical_or_root_alias( $attrs, $property_path, $normalized_group_id );
 
 						return GlobalPresetItemGroupUtils::maybe_set_attrs(
 							[
@@ -352,7 +496,16 @@ class GlobalPresetItemGroup extends GlobalPresetItem {
 					if ( null !== $attr_name_resolved->get_attr_callback() ) {
 						$attr = call_user_func( $attr_name_resolved->get_attr_callback(), $attrs );
 					} else {
-						$attr = ArrayUtility::get_value_by_array_path( $attrs, explode( '.', $attr_name_resolved->get_attr_name() ) );
+						$resolved_attr_name        = $attr_name_resolved->get_attr_name();
+						$resolved_attr_name        = self::_normalize_root_group_alias_to_canonical_attr_name(
+							$resolved_attr_name,
+							$normalized_data_group_id,
+							$data_module_name
+						);
+						$direct_attr               = self::_get_attr_from_path( $attrs, explode( '.', $attr_name ) );
+						$mapped_attr               = self::_get_attr_from_path( $attrs, explode( '.', $resolved_attr_name ) );
+						$should_prefer_mapped_attr = $resolved_attr_name !== $attr_name;
+						$attr                      = $should_prefer_mapped_attr ? ( $mapped_attr ?? $direct_attr ) : ( $direct_attr ?? $mapped_attr );
 					}
 
 					if ( null !== $attr_name_resolved->get_property_path_callback() ) {

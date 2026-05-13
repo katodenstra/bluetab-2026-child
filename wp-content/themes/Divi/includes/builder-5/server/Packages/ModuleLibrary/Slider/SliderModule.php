@@ -356,7 +356,21 @@ class SliderModule implements DependencyInterface {
 					// Image.
 					$elements->style(
 						[
-							'attrName' => 'image',
+							'attrName'   => 'image',
+							'styleProps' => [
+								'fit'    => [
+									'selector' => "{$args['orderClass']} .et_pb_slide_image img",
+								],
+								'sizing' => [
+									'propertySelectors' => [
+										'desktop' => [
+											'value' => [
+												'aspect-ratio' => "{$args['orderClass']} .et_pb_slide_image img",
+											],
+										],
+									],
+								],
+							],
 						]
 					),
 					// Title.

@@ -179,7 +179,21 @@ class PostContentModule implements DependencyInterface {
 					// image.
 					$elements->style(
 						[
-							'attrName' => 'image',
+							'attrName'   => 'image',
+							'styleProps' => [
+								'fit'    => [
+									'selector' => "{$args['orderClass']} img",
+								],
+								'sizing' => [
+									'propertySelectors' => [
+										'desktop' => [
+											'value' => [
+												'aspect-ratio' => "{$args['orderClass']} img",
+											],
+										],
+									],
+								],
+							],
 						]
 					),
 					// Module - Only for Custom CSS.

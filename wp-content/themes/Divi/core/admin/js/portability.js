@@ -7,6 +7,8 @@
 
 		cancelled: false,
 
+		maxProgressPercent: 0,
+
 		boot: function( $instance ) {
 			var $this = this;
 			var $customizeHeader = $( '#customize-header-actions' );
@@ -193,6 +195,7 @@
 				action: 'et_core_portability_import',
 				file: file,
 				include_global_presets: includeGlobalPresets,
+				progressMessageTemplate: $this.text.importing,
 				nonce: $this.nonces.import
 			}, function( response ) {
 				etCore.modalContent( '<div class="et-core-loader et-core-loader-success"></div>', false, 3000, '#et-core-portability-import' );
@@ -241,9 +244,17 @@
 			var processedFiles = 0;
 			var successfulImports = 0;
 			var failedImports = 0;
+			var $progressContainer = null;
+
+			// Reset max progress tracking for monotonic progress enforcement.
+			$this.maxProgressPercent = 0;
 
 			$this.addProgressBar( $this.text.importing + ' (0/' + files.length + ')' );
 			$this.updateProgressBar( $this.text.importing + ' (0/' + files.length + ')', 0 );
+			$progressContainer = $this.instance( '.et-core-progress' );
+			if ( $progressContainer.length ) {
+				$progressContainer.addClass( 'et-core-multi-file-import' );
+			}
 
 			// Process each file individually.
 			for ( var i = 0; i < files.length; i++ ) {
@@ -273,18 +284,9 @@
 					await new Promise( function( resolve ) {
 						var includeGlobalPresets = $this.instance( '[name="et-core-portability-import-include-global-presets"]' ).is( ':checked' );
 
-						// Temporarily add class to prevent ajaxAction from auto-completing progress bar.
-						var $progressContainer = $this.instance( '.et-core-progress' );
-						if ( $progressContainer.length ) {
-							$progressContainer.addClass( 'et-core-multi-file-import' );
-						}
-
 						// Set up timeout to prevent hanging on network/server errors
 						var timeoutId = setTimeout( function() {
 							console.warn( 'Import timeout for file: ' + file.name );
-							if ( $progressContainer.length ) {
-								$progressContainer.removeClass( 'et-core-multi-file-import' );
-							}
 							failedImports++;
 							resolve(); // Continue processing other files
 						}, 30000 ); // 30 second timeout
@@ -293,13 +295,14 @@
 							action: 'et_core_portability_import',
 							file: formattedFile,
 							include_global_presets: includeGlobalPresets,
-							nonce: $this.nonces.import
+							multi_file_import: true,
+							progressMessageTemplate: $this.text.importing,
+							nonce: $this.nonces.import,
+							// Pass file counter info for pagination progress messages.
+							processedFileIndex: i + 1,
+							totalFilesCount: files.length,
 						}, function( response ) {
 							clearTimeout( timeoutId );
-							// Remove the class.
-							if ( $progressContainer.length ) {
-								$progressContainer.removeClass( 'et-core-multi-file-import' );
-							}
 							successfulImports++;
 							resolve( response );
 						}, true ); // fileSupport parameter is boolean, not error callback
@@ -327,6 +330,9 @@
 			// Use appropriate icon based on results
 			var iconClass = successfulImports > 0 ? 'et-core-loader-success' : 'et-core-loader-fail';
 			etCore.modalContent( '<div class="et-core-loader ' + iconClass + '"></div><p>' + message + '</p>', false, 3000, '#et-core-portability-import' );
+			if ( $progressContainer && $progressContainer.length ) {
+				$progressContainer.removeClass( 'et-core-multi-file-import' );
+			}
 			$this.toggleCancel();
 
 			// Reload page after completion.
@@ -399,6 +405,7 @@
 						content: content,
 						selection: $.isEmptyObject( posts ) ? false : JSON.stringify( posts ),
 						apply_global_presets: applyGlobalPresets,
+						progressMessageTemplate: progressBarMessages,
 						nonce: $this.nonces.export,
 						return: true,
 					}, function( response ) {
@@ -434,6 +441,7 @@
 						content: content,
 						selection: $.isEmptyObject( posts ) ? false : JSON.stringify( posts ),
 						apply_global_presets: applyGlobalPresets,
+						progressMessageTemplate: progressBarMessages,
 						nonce: $this.nonces.export
 					}, function( response ) {
 						var time        = ' ' + new Date().toJSON().replace( 'T', ' ' ).replace( ':', 'h' ).substring( 0, 16 );
@@ -984,6 +992,7 @@
 				file: null,
 				content: false,
 				timestamp: 0,
+				progressMessageTemplate: '',
 				post: $( '#post_ID' ).val(),
 				context: $this.instance().data( 'et-core-portability' ),
 				page: 1,
@@ -1012,7 +1021,10 @@
 					}
 					// Paginate.
 					else if ( 'undefined' !== typeof response.page ) {
-						var progress = Math.ceil( ( response.page * 100 ) / response.total_pages );
+						var progress   = Math.ceil( ( response.page * 100 ) / response.total_pages );
+						var estimation = Math.ceil( ( ( response.total_pages - response.page ) * 6 ) / 60 );
+						var fileIndex  = parseInt( data.processedFileIndex, 10 );
+						var totalFiles = parseInt( data.totalFilesCount, 10 );
 
 						if ( $this.cancelled ) {
 							return;
@@ -1026,11 +1038,28 @@
 							file: null,
 						} ), callback, false );
 
-						$this.instance( '.et-core-progress-bar' )
-							.width( progress + '%' )
-							.text( progress + '%' );
+						// Convert per-file pagination progress into overall multi-file progress.
+						if ( ! isNaN( fileIndex ) && ! isNaN( totalFiles ) && totalFiles > 0 && response.total_pages > 0 ) {
+							const completedFilesProgress = fileIndex - 1;
+							const currentFileProgress    = response.page / response.total_pages;
+							progress                     = ( ( completedFilesProgress + currentFileProgress ) / totalFiles ) * 100;
+						}
 
-						$this.instance( '.et-core-progress-subtext span' ).text( Math.ceil( ( ( response.total_pages - response.page ) * 6 ) / 60 ) );
+						// Use updateProgressBar for monotonic enforcement instead of direct DOM manipulation.
+						// Include file counter in message if available from multi-file import.
+						var progressMessageTemplate = data.progressMessageTemplate;
+						if ( 'string' !== typeof progressMessageTemplate || '' === progressMessageTemplate ) {
+							progressMessageTemplate = $this.instance( '.et-core-progress-subtext' ).html() || '';
+						}
+						if ( 'string' !== typeof progressMessageTemplate || '' === progressMessageTemplate ) {
+							progressMessageTemplate = $this.text.importing;
+						}
+						var message = progressMessageTemplate.replace( /<span[^>]*>.*?<\/span>/, '<span>' + estimation + '</span>' );
+
+						if ( ! isNaN( fileIndex ) && ! isNaN( totalFiles ) ) {
+							message += ' (' + fileIndex + '/' + totalFiles + ')';
+						}
+						$this.updateProgressBar( message, progress );
 
 						return;
 					} else if ( 'undefined' !== typeof response.data && 'undefined' !== typeof response.data.message ) {
@@ -1054,8 +1083,11 @@
 							return;
 						}
 
+						// Check if this request belongs to multi-file import flow.
+						var isMultiFileImportRequest = true === data.multi_file_import;
+
 						// Check if core progress DOM exists and is not in multi-file import mode.
-						if ($this.instance( '.et-core-progress' ).length && ! $this.instance( '.et-core-progress' ).hasClass( 'et-core-multi-file-import' ) ) {
+						if ( $this.instance( '.et-core-progress' ).length && ! $this.instance( '.et-core-progress' ).hasClass( 'et-core-multi-file-import' ) && ! isMultiFileImportRequest ) {
 							$this.instance( '.et-core-progress' )
 								.removeClass( 'et-core-progress-striped' )
 								.find( '.et-core-progress-bar' ).width( '100%' )
@@ -1074,7 +1106,7 @@
 
 									callback( response );
 								} );
-						} else if ($this.instance( '.et-core-progress' ).hasClass( 'et-core-multi-file-import' ) ) {
+						} else if ( $this.instance( '.et-core-progress' ).hasClass( 'et-core-multi-file-import' ) || isMultiFileImportRequest ) {
 							// Multi-file import: call callback immediately without progress bar animation.
 							callback( response );
 						} else {
@@ -1141,16 +1173,29 @@
 		},
 
 		addProgressBar: function( message ) {
+			// Reset max progress ceiling for each new operation.
+			this.maxProgressPercent = 0;
 			etCore.modalContent( '<div class="et-core-progress et-core-progress-striped et-core-active"><div class="et-core-progress-bar" style="width: 0%;">0%</div><span class="et-core-progress-subtext">' + message + '</span></div>', false, false, '#' + this.instance( '.ui-tabs-panel:visible' ).attr( 'id' ) );
 		},
 
 		updateProgressBar: function( message, progressPercent ) {
 			var $progressBar = this.instance( '.et-core-progress-bar' );
 			var $progressText = this.instance( '.et-core-progress-subtext' );
+			var currentWidth = 0;
+
+			if ( $progressBar.length ) {
+				currentWidth = parseFloat( $progressBar.width() ) || 0;
+			}
 
 			if ( $progressBar.length && 'undefined' !== typeof progressPercent ) {
-				$progressBar.width( progressPercent + '%' );
-				$progressBar.text( Math.round( progressPercent ) + '%' );
+				// Enforce monotonic progress - progress should never decrease.
+				var boundedProgress     = Math.max( 0, Math.min( 100, progressPercent ) );
+				var maxProgressBefore   = this.maxProgressPercent;
+				var monotonicProgress   = Math.max( maxProgressBefore, boundedProgress );
+				this.maxProgressPercent = monotonicProgress;
+
+				$progressBar.width( monotonicProgress + '%' );
+				$progressBar.text( Math.round( monotonicProgress ) + '%' );
 			}
 
 			if ( $progressText.length ) {

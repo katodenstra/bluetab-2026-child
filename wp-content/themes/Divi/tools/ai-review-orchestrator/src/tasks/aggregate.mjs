@@ -214,6 +214,7 @@ export const aggregateResults = task(
     const retroDroppedCount = Array.isArray(retroFiltered?.dropped)
       ? retroFiltered.dropped.length
       : 0;
+    const retroReport = retroFiltered?.report ?? null;
     const { budgeted, overflow } = enforceCaps(
       filteredFindings,
       facts.config,
@@ -275,6 +276,9 @@ export const aggregateResults = task(
     );
     if (facts.outputPaths) {
       writeJson(facts.outputPaths.aggregateFindings, summary);
+      if (facts.outputPaths.retroDupeReport && retroReport) {
+        writeJson(facts.outputPaths.retroDupeReport, retroReport);
+      }
       const inlineComments = inlineResult?.comments || [];
       writeJson(
         path.join(facts.outputPaths.outputRoot, "aggregate/inline-comments.json"),
@@ -366,11 +370,20 @@ export const aggregateResults = task(
       const reviewFindings = prFindingsForComment.filter(
         (finding) => true !== finding.posted_inline
       );
+      const exactDropped = retroReport?.prefilter?.dropped_count ?? 0;
+      const modelDropped = retroReport?.model?.dropped_count ?? 0;
+      const dropParts =
+        retroDroppedCount > 0
+          ? [
+              exactDropped ? `${exactDropped} exact` : null,
+              modelDropped ? `${modelDropped} model` : null,
+            ].filter(Boolean)
+          : [];
       const retroDropLine =
         retroDroppedCount > 0
           ? `Retro dupe filter: Dropped ${retroDroppedCount} duplicate finding${
               retroDroppedCount === 1 ? "" : "s"
-            }.`
+            }${dropParts.length ? ` (${dropParts.join(", ")})` : ""}.`
           : null;
       const summaryCommentLines = [
         "<!-- dh:review-summary -->",

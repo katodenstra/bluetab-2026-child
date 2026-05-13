@@ -40,7 +40,7 @@
         },
 
         readiness: {
-            colors: ['#31277e', '#542675'],
+            colors: ['#3c2582', '#542675', '#9b3c3d'],
         },
 
         products: {
@@ -136,23 +136,23 @@
         if (width <= 767) {
             return {
                 ...config,
-                lineCount: 32,
-                pointsPerLine: 160,
+                lineCount: 30,
+                pointsPerLine: 120,
             };
         }
 
         if (width <= 980) {
             return {
                 ...config,
-                lineCount: 48,
-                pointsPerLine: 200,
+                lineCount: 44,
+                pointsPerLine: 150,
             };
         }
 
         return {
             ...config,
-            lineCount: 70,
-            pointsPerLine: 260,
+            lineCount: 56,
+            pointsPerLine: 180,
         };
     }
 
@@ -173,11 +173,13 @@
         let dpr = 1;
         let animationFrame = null;
         let isVisible = true;
-        let lastFrame = 0;
+        let lastFrameTime = 0;
+        let resizeFrame = null;
 
         const start = performance.now();
         const seed = Math.random() * 1000;
-        const frameInterval = 1000 / 30;
+        const targetFps = 30;
+        const frameInterval = 1000 / targetFps;
 
         function resize() {
             config = getResponsiveConfig(baseConfig);
@@ -314,19 +316,7 @@
             return { x, y };
         }
 
-        function draw(now) {
-            if (prefersReducedMotion() || document.hidden || !isVisible) {
-                animationFrame = null;
-                return;
-            }
-
-            if (now - lastFrame < frameInterval) {
-                animationFrame = requestAnimationFrame(draw);
-                return;
-            }
-
-            lastFrame = now;
-
+        function drawFrame(now) {
             const elapsed = now - start;
             const time = elapsed * config.speed;
 
@@ -343,14 +333,18 @@
             const rotation = (config.rotationDeg * Math.PI) / 180;
             const cos = Math.cos(rotation);
             const sin = Math.sin(rotation);
+            const currentLineCount = config.lineCount;
+            const currentPointsPerLine = config.pointsPerLine;
+            const lineDenominator = currentLineCount - 1;
+            const pointDenominator = currentPointsPerLine - 1;
 
-            for (let i = 0; i < config.lineCount; i++) {
-                const lineT = i / (config.lineCount - 1);
+            for (let i = 0; i < currentLineCount; i++) {
+                const lineT = i / lineDenominator;
 
                 ctx.beginPath();
 
-                for (let j = 0; j < config.pointsPerLine; j++) {
-                    const t = j / (config.pointsPerLine - 1);
+                for (let j = 0; j < currentPointsPerLine; j++) {
+                    const t = j / pointDenominator;
                     const point = getRibbonPoint(t, lineT, time, scale);
 
                     const flowOffset =
@@ -375,6 +369,36 @@
                 ctx.strokeStyle = getGradientColor(config.colors, lineT, alpha);
                 ctx.stroke();
             }
+        }
+
+        function drawStaticFrameIfNeeded() {
+            if (!width || !height) {
+                resize();
+            }
+
+            drawFrame(performance.now());
+        }
+
+        function draw(now = 0) {
+            if (document.hidden || !isVisible) {
+                stopAnimation();
+                return;
+            }
+
+            if (prefersReducedMotion()) {
+                stopAnimation();
+                drawStaticFrameIfNeeded();
+                return;
+            }
+
+            if (now - lastFrameTime < frameInterval) {
+                animationFrame = requestAnimationFrame(draw);
+                return;
+            }
+
+            lastFrameTime = now;
+
+            drawFrame(now);
 
             animationFrame = requestAnimationFrame(draw);
         }
@@ -389,7 +413,12 @@
                 return;
             }
 
-            resize();
+            lastFrameTime = 0;
+
+            if (!width || !height) {
+                resize();
+            }
+
             animationFrame = requestAnimationFrame(draw);
         }
 
@@ -409,6 +438,21 @@
             startAnimation();
         }
 
+        function handleResize() {
+            if (resizeFrame) {
+                cancelAnimationFrame(resizeFrame);
+            }
+
+            resizeFrame = requestAnimationFrame(() => {
+                resizeFrame = null;
+                resize();
+
+                if (!animationFrame) {
+                    drawStaticFrameIfNeeded();
+                }
+            });
+        }
+
         let observer = null;
 
         if ('IntersectionObserver' in window) {
@@ -424,6 +468,7 @@
                     }
                 },
                 {
+                    rootMargin: '120px',
                     threshold: 0.01,
                 },
             );
@@ -431,20 +476,31 @@
             observer.observe(container);
         }
 
-        window.addEventListener('resize', resize);
+        window.addEventListener('resize', handleResize);
         document.addEventListener('visibilitychange', handleVisibilityChange);
 
-        startAnimation();
+        resize();
+
+        if (prefersReducedMotion()) {
+            drawStaticFrameIfNeeded();
+        } else {
+            startAnimation();
+        }
 
         return {
             resize,
             stop() {
                 stopAnimation();
-                window.removeEventListener('resize', resize);
+                window.removeEventListener('resize', handleResize);
                 document.removeEventListener(
                     'visibilitychange',
                     handleVisibilityChange,
                 );
+
+                if (resizeFrame) {
+                    cancelAnimationFrame(resizeFrame);
+                    resizeFrame = null;
+                }
 
                 if (observer) {
                     observer.disconnect();

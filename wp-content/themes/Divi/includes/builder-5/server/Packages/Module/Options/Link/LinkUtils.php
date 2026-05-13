@@ -77,7 +77,8 @@ class LinkUtils {
 
 		return [
 			'class'  => ltrim( $args['selector'], '.' ),
-			'url'    => esc_url( $args['attr']['desktop']['value']['url'] ),
+			// esc_url_raw keeps & in query strings for JSON/JS; esc_url encodes to &#038; and breaks the link script.
+			'url'    => esc_url_raw( $args['attr']['desktop']['value']['url'] ),
 			'target' => 'on' === ( $args['attr']['desktop']['value']['target'] ?? 'off' ) ? '_blank' : '_self',
 		];
 	}
@@ -92,7 +93,7 @@ class LinkUtils {
 	 * @return bool
 	 */
 	public static function is_enabled( array $attr ): bool {
-		// Only account valid URL.
-		return (bool) esc_url( $attr['desktop']['value']['url'] ?? '' );
+		// Must match generate_data() so validation aligns with the URL sent to script data.
+		return (bool) esc_url_raw( $attr['desktop']['value']['url'] ?? '' );
 	}
 }

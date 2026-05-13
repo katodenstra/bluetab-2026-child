@@ -1,1 +1,1 @@
-<?php return array('dependencies' => array('divi-colors', 'divi-data', 'divi-fonts', 'divi-middleware', 'divi-module-utils', 'divi-rest', 'divi-settings', 'divi-vendor-react', 'divi-vendor-wp-i18n', 'divi-window', 'lodash'), 'version' => '7614196c625149d5aec5');
+<?php return array('dependencies' => array('divi-colors', 'divi-data', 'divi-fonts', 'divi-middleware', 'divi-module-utils', 'divi-rest', 'divi-settings', 'divi-vendor-react', 'divi-vendor-wp-i18n', 'divi-window', 'lodash'), 'version' => '678a5bdc5dd2737ebfe3');

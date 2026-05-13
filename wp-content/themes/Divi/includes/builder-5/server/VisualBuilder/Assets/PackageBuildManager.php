@@ -518,6 +518,12 @@ class PackageBuildManager implements DependencyInterface {
 			[
 				'name'   => 'divi-module',
 				'script' => [
+					/**
+					 * `module.js` embeds TinyMCE; `react-tiny-mce` must run first so `baseURL` targets `assets/tinymce/`, not `build/plugins/`.
+					 */
+					'deps'               => [
+						'react-tiny-mce',
+					],
 					'enqueue_top_window' => false,
 				],
 			]

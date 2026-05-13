@@ -24,6 +24,7 @@ use ET\Builder\Packages\Module\Layout\Components\MultiView\MultiViewScriptData;
 use ET\Builder\Packages\Module\Module;
 use ET\Builder\Packages\Module\Options\Css\CssStyle;
 use ET\Builder\Packages\Module\Options\Element\ElementClassnames;
+use ET\Builder\Packages\ModuleLibrary\Common\ImageWrapperAnimation;
 use ET\Builder\Packages\Module\Options\Text\TextClassnames;
 use ET\Builder\Packages\ModuleLibrary\ModuleRegistration;
 use ET\Builder\Packages\ModuleUtils\ChildrenUtils;
@@ -233,7 +234,7 @@ class TeamMemberModule implements DependencyInterface {
 	 * Generates the style declaration for flex shrink for TeamMember module.
 	 *
 	 * This function accepts an array of parameters and generates a style declaration based on the display value.
-	 * When display is set to 'flex', it sets flex and width properties. Otherwise, it returns an empty string.
+	 * When display is set to 'flex', it sets flex and width `auto` on the image wrapper. Otherwise, it returns an empty string.
 	 * The resulting style declaration can be used to apply CSS styles to an HTML element.
 	 *
 	 * @since ??
@@ -284,7 +285,7 @@ class TeamMemberModule implements DependencyInterface {
 		);
 
 		$style_declarations->add( 'flex', '0 1 auto' );
-		$style_declarations->add( 'width', '100%' );
+		$style_declarations->add( 'width', 'auto' );
 
 		return $style_declarations->value();
 	}
@@ -294,8 +295,8 @@ class TeamMemberModule implements DependencyInterface {
 	 *
 	 * Sets flex property to allow description to grow and fill available space,
 	 * matching D4 behavior where description uses `flex: 1` in desktop layouts.
-	 * Unlike flex_shrink_style_declaration, this does NOT add `width: 100%` which
-	 * would break custom CSS with position: absolute.
+	 * Unlike flex_shrink_style_declaration, this does not set width on the description,
+	 * avoiding breakage for custom CSS with position: absolute.
 	 *
 	 * @since ??
 	 *
@@ -550,6 +551,21 @@ class TeamMemberModule implements DependencyInterface {
 						[
 							'attrName'   => 'image',
 							'styleProps' => [
+								'fit'            => [
+									'selector' => "{$args['orderClass']} .et_pb_team_member_image img",
+								],
+								'sizing'         => [
+									'propertySelectors' => [
+										'desktop' => [
+											'value' => [
+												'aspect-ratio' => "{$args['orderClass']} .et_pb_team_member_image img",
+												'height' => "{$args['orderClass']} .et_pb_team_member_image img",
+												'min-height' => "{$args['orderClass']} .et_pb_team_member_image img",
+												'max-height' => "{$args['orderClass']} .et_pb_team_member_image img",
+											],
+										],
+									],
+								],
 								'attrsFilter'    => function ( $decoration_attrs ) {
 									$has_hover_value            = ! empty( $decoration_attrs['border']['desktop']['hover']['styles'] ?? [] );
 									$has_sticky_value           = ! empty( $decoration_attrs['border']['desktop']['sticky']['styles'] ?? [] );
@@ -680,24 +696,44 @@ class TeamMemberModule implements DependencyInterface {
 			}
 		}
 
-		$team_member_image   = $attrs['image']['innerContent']['desktop']['value']['url'] ?? '';
-		$has_image_animation = $attrs['image']['innerContent']['desktop']['value']['animation'] ?? 'off';
+		$team_member_image      = $attrs['image']['innerContent']['desktop']['value']['url'] ?? '';
+		$legacy_image_animation = $attrs['image']['innerContent']['desktop']['value']['animation'] ?? 'off';
 
-		$image_name_attrs = self::merge_image_name_attrs( $attrs['image']['innerContent'] ?? [], $attrs['name']['innerContent'] ?? [] );
+		$image_name_attrs  = self::merge_image_name_attrs( $attrs['image']['innerContent'] ?? [], $attrs['name']['innerContent'] ?? [] );
+		$image_attr        = array_replace_recursive(
+			$attrs['image'] ?? [],
+			$image_name_attrs
+		);
+		$image_render_attr = ImageWrapperAnimation::render_attr_without_animation( $image_attr );
 
 		$image = $elements->render(
 			[
 				'attrName'    => 'image',
-				'elementAttr' => $image_name_attrs,
+				'elementAttr' => $image_render_attr,
 			]
 		);
+
+		$image_container_classes     = [
+			'et_pb_team_member_image' => true,
+		];
+		$wrapper_animation_classname = ImageWrapperAnimation::wrapper_animation_classname( $image_attr );
+		$has_element_image_animation = '' !== $wrapper_animation_classname;
+
+		if ( '' !== $wrapper_animation_classname ) {
+			$image_container_classes[ $wrapper_animation_classname ] = true;
+		}
+
+		if ( ! $has_element_image_animation ) {
+			$image_container_classes['et-waypoint']                                  = true;
+			$image_container_classes[ 'et_pb_animation_' . $legacy_image_animation ] = true;
+		}
 
 		// Team Member Image Container.
 		$image_container = $has_image ? HTMLUtility::render(
 			[
 				'tag'               => 'div',
 				'attributes'        => [
-					'class' => 'et_pb_team_member_image et-waypoint et_pb_animation_' . $has_image_animation,
+					'class' => HTMLUtility::classnames( $image_container_classes ),
 				],
 				'children'          => $image,
 				'childrenSanitizer' => 'et_core_esc_previously',

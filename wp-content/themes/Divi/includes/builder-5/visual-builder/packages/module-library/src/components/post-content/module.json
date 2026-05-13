@@ -47,64 +47,46 @@
       "selector": "{{selector}} img",
       "settings": {
         "decoration": {
-          "border": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "priority": 10,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/border",
-                "props": {
-                  "grouped": false,
-                  "fieldLabel": "Image"
-                }
-              }
-            }
-          },
-          "boxShadow": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "priority": 15,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/box-shadow",
-                "props": {
-                  "grouped": false,
-                  "fieldLabel": "Image"
-                }
+          "image": {
+            "panel": "design",
+            "groupType": "group",
+            "groupName": "image",
+            "priority": 10,
+            "component": {
+              "type": "group",
+              "name": "divi/image",
+              "props": {
+                "attrName": "image",
+                "groupLabel": "Image",
+                "grouped": true,
+                "dynamicSubgroupHost": true,
+                "presetGroup": "divi/image"
               }
             }
           }
         }
       },
-      "styleProps": {}
+      "styleProps": {
+        "fit": {
+          "selector": "{{selector}} img"
+        },
+        "sizing": {
+          "propertySelectors": {
+            "desktop": {
+              "value": {
+                "aspect-ratio": "{{selector}} img"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "customCssFields": {},
   "settings": {
     "content": "auto",
     "design": "auto",
-    "advanced": "auto",
-    "groups": {
-      "designImage": {
-        "panel": "design",
-        "priority": 10,
-        "groupName": "imageStyle",
-        "multiElements": true,
-        "component": {
-          "name": "divi/composite",
-          "props": {
-            "groupLabel": "Image",
-            "clipboardCategory": "style",
-            "dynamicSubgroupHost": true
-          }
-        }
-      }
-    }
+    "advanced": "auto"
   },
   "d4Shortcode": "et_pb_post_content",
   "appearance": {

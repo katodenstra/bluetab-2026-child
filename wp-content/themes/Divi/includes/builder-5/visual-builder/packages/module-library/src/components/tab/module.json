@@ -18,6 +18,9 @@
         "spacing": {
           "selector": "{{selectorPrefix}}.et_pb_tabs .et_pb_tab{{baseSelector}}"
         },
+        "sizing": {
+          "selector": "{{selector}} .et_pb_tab_content"
+        },
         "layout": {
           "selector": "{{selector}} .et_pb_tab_content"
         }
@@ -51,6 +54,7 @@
           "overflow": {},
           "order": {},
           "position": {},
+          "sizing": {},
           "spacing": {
             "component": {
               "props": {

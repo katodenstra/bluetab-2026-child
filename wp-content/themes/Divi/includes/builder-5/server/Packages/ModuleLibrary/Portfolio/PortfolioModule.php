@@ -27,6 +27,7 @@ use ET\Builder\Packages\Module\Options\BoxShadow\BoxShadowUtils;
 use ET\Builder\Packages\Module\Options\Css\CssStyle;
 use ET\Builder\Packages\Module\Options\Element\ElementClassnames;
 use ET\Builder\Packages\Module\Options\Text\TextClassnames;
+use ET\Builder\Packages\ModuleLibrary\Common\ImageWrapperAnimation;
 use ET\Builder\Packages\ModuleLibrary\ModuleRegistration;
 use ET\Builder\Packages\ModuleLibrary\Portfolio\PortfolioPresetAttrsMap;
 use ET\Builder\Packages\ModuleUtils\ChildrenUtils;
@@ -432,6 +433,18 @@ class PortfolioModule implements DependencyInterface {
 						[
 							'attrName'   => 'image',
 							'styleProps' => [
+								'fit'            => [
+									'selector' => "{$order_class} .et_portfolio_image img",
+								],
+								'sizing'         => [
+									'propertySelectors' => [
+										'desktop' => [
+											'value' => [
+												'aspect-ratio' => "{$order_class} .et_portfolio_image img",
+											],
+										],
+									],
+								],
 								'advancedStyles' => [
 									[
 										'componentName' => 'divi/common',
@@ -747,6 +760,7 @@ class PortfolioModule implements DependencyInterface {
 				// Box shadow overlay.
 				$box_shadow_components_overlay     = '';
 				$box_shadow_classnames_has_overlay = '';
+				$thumbnail_wrapper_classnames      = 'et_portfolio_image';
 
 				if ( BoxShadowUtils::is_overlay_enabled( $attrs['image']['decoration']['boxShadow'] ?? [] ) ) {
 					$box_shadow_components_overlay     = $elements->style_components(
@@ -757,6 +771,12 @@ class PortfolioModule implements DependencyInterface {
 					$box_shadow_classnames_has_overlay = BoxShadowClassnames::has_overlay( $attrs['image']['decoration']['boxShadow'] ?? [] );
 				}
 
+				$thumbnail_wrapper_classnames = HTMLUtility::classnames(
+					$thumbnail_wrapper_classnames,
+					$box_shadow_classnames_has_overlay,
+					ImageWrapperAnimation::wrapper_animation_classname( $attrs['image'] ?? [] )
+				);
+
 				/**
 				 * Composes portfolio post thumbnails.
 				 */
@@ -766,7 +786,7 @@ class PortfolioModule implements DependencyInterface {
 				$thumbnail = has_post_thumbnail( $post_id ) ? sprintf(
 					'
 				<a href="%1$s" title="%2$s">
-					<span class="et_portfolio_image%5$s">
+					<span class="%5$s">
 						%3$s
 						%4$s
 					</span>
@@ -775,7 +795,7 @@ class PortfolioModule implements DependencyInterface {
 					esc_attr( $title ),
 					$box_shadow_components_overlay . self::get_portfolio_thumbnail( $post_thumbnail_id, $thumbnail_layout, $elements, $attrs ),
 					$overlay,
-					$box_shadow_classnames_has_overlay ? ' ' . $box_shadow_classnames_has_overlay : ''
+					$thumbnail_wrapper_classnames
 				) : '';
 
 				/**
@@ -1017,7 +1037,8 @@ class PortfolioModule implements DependencyInterface {
 	 * ```
 	 */
 	public static function get_portfolio_thumbnail( int $post_thumbnail_id, string $layout, ModuleElements $elements, array $attrs = [] ): string {
-		$alt_text = get_post_meta( $post_thumbnail_id, '_wp_attachment_image_alt', true );
+		$alt_text   = get_post_meta( $post_thumbnail_id, '_wp_attachment_image_alt', true );
+		$image_attr = ImageWrapperAnimation::render_attr_without_animation( $attrs['image'] ?? [] );
 
 		// Select optimal image size based on layout.
 		$selected_image_size = ImageUtils::select_optimal_image_size( $attrs, $layout );
@@ -1033,9 +1054,10 @@ class PortfolioModule implements DependencyInterface {
 
 		$image = $elements->render(
 			[
-				'attrName'   => 'image',
-				'tagName'    => 'img',
-				'attributes' => [
+				'attrName'    => 'image',
+				'elementAttr' => $image_attr,
+				'tagName'     => 'img',
+				'attributes'  => [
 					'src'    => esc_url( $selected_thumbnail['src'] ),
 					'width'  => esc_attr( $selected_thumbnail['width'] ),
 					'height' => esc_attr( $selected_thumbnail['height'] ),

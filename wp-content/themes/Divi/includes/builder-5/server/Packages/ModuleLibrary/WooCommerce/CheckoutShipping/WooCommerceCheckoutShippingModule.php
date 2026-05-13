@@ -380,20 +380,32 @@ class WooCommerceCheckoutShippingModule implements DependencyInterface {
 			"{$order_class} form .form-row.woocommerce-validated input.input-text",
 		];
 		$select_rendered_text_selectors = [
+			".woocommerce {$order_class} .select2-container--default .select2-selection--single .select2-selection__rendered",
+			"{$order_class} .select2-container--default .select2-selection--single .select2-selection__rendered",
 			".woocommerce {$order_class} .select2-container .select2-selection--single .select2-selection__rendered",
 			"{$order_class} .select2-container .select2-selection--single .select2-selection__rendered",
 		];
 		$select_rendered_text_open_selectors = [
+			".woocommerce {$order_class} .select2-container--default.select2-container--focus .select2-selection--single .select2-selection__rendered",
+			"{$order_class} .select2-container--default.select2-container--focus .select2-selection--single .select2-selection__rendered",
+			".woocommerce {$order_class} .select2-container--focus .select2-selection--single .select2-selection__rendered",
+			"{$order_class} .select2-container--focus .select2-selection--single .select2-selection__rendered",
+			".woocommerce {$order_class} .select2-container--focus .select2-selection__rendered",
+			"{$order_class} .select2-container--focus .select2-selection__rendered",
+			".woocommerce {$order_class} .select2-container--default.select2-container--open .select2-selection--single .select2-selection__rendered",
+			"{$order_class} .select2-container--default.select2-container--open .select2-selection--single .select2-selection__rendered",
+			".woocommerce {$order_class} .select2-container--open .select2-selection--single .select2-selection__rendered",
+			"{$order_class} .select2-container--open .select2-selection--single .select2-selection__rendered",
 			".woocommerce {$order_class} .select2-container--open .select2-selection__rendered",
 			"{$order_class} .select2-container--open .select2-selection__rendered",
 		];
 		$select_rendered_text_hover_selectors = [
+			".woocommerce {$order_class}:hover .select2-container--default .select2-selection--single .select2-selection__rendered",
+			"{$order_class}:hover .select2-container--default .select2-selection--single .select2-selection__rendered",
+			".woocommerce {$order_class}:hover .select2-container .select2-selection--single .select2-selection__rendered",
+			"{$order_class}:hover .select2-container .select2-selection--single .select2-selection__rendered",
 			".woocommerce {$order_class} .select2-container .select2-selection--single:hover .select2-selection__rendered",
 			"{$order_class} .select2-container .select2-selection--single:hover .select2-selection__rendered",
-		];
-		$select_rendered_text_open_hover_selectors = [
-			".woocommerce {$order_class} .select2-container--open:hover .select2-selection__rendered",
-			"{$order_class} .select2-container--open:hover .select2-selection__rendered",
 		];
 
 		Style::add(
@@ -496,34 +508,6 @@ class WooCommerceCheckoutShippingModule implements DependencyInterface {
 											],
 										],
 									],
-									'font'       => [
-										'font' => [
-											'desktop' => [
-												'value' => [
-													'color' => implode(
-														', ',
-														[
-															...$select_rendered_text_open_selectors,
-															".woocommerce {$order_class} form .form-row input.input-text:focus",
-															"{$order_class} form .form-row input.input-text:focus",
-														]
-													),
-													'font-weight' => implode( ', ', $select_rendered_text_open_selectors ),
-												],
-												'hover' => [
-													'color' => implode(
-														', ',
-														[
-															...$select_rendered_text_open_hover_selectors,
-															".woocommerce {$order_class} form .form-row input.input-text:focus:hover",
-															"{$order_class} form .form-row input.input-text:focus:hover",
-														]
-													),
-													'font-weight' => implode( ', ', $select_rendered_text_open_hover_selectors ),
-												],
-											],
-										],
-									],
 									'border'     => [
 										'desktop' => [
 											'value' => [
@@ -542,12 +526,10 @@ class WooCommerceCheckoutShippingModule implements DependencyInterface {
 												'color' => implode(
 													', ',
 													[
-														...$select_rendered_text_selectors,
 														".woocommerce {$order_class} form .form-row .input-text",
 														"{$order_class} form .form-row .input-text",
 													]
 												),
-												'font-weight' => implode( ', ', $select_rendered_text_selectors ),
 											],
 											'hover' => [
 												'color' => implode(
@@ -622,6 +604,31 @@ class WooCommerceCheckoutShippingModule implements DependencyInterface {
 										],
 									],
 								],
+							],
+						]
+					),
+					ElementStyle::style(
+						[
+							'selector'               => implode( ', ', $select_rendered_text_selectors ),
+							'attrs'                  => [
+								'font' => self::get_select_rendered_text_value_font_attr( $attrs['field']['decoration']['font'] ?? [] ),
+							],
+							'orderClass'             => $order_class,
+							'isInsideStickyModule'   => $is_inside_sticky_module,
+							'stickyParentOrderClass' => $sticky_parent_order_class,
+						]
+					),
+					ElementStyle::style(
+						[
+							'selector'               => implode( ', ', $select_rendered_text_open_selectors ),
+							'attrs'                  => [
+								'font' => self::get_select_rendered_text_focus_font_attr( $attrs['field']['decoration']['font'] ?? [] ),
+							],
+							'orderClass'             => $order_class,
+							'isInsideStickyModule'   => $is_inside_sticky_module,
+							'stickyParentOrderClass' => $sticky_parent_order_class,
+							'font'                   => [
+								'important' => true,
 							],
 						]
 					),
@@ -814,6 +821,95 @@ class WooCommerceCheckoutShippingModule implements DependencyInterface {
 				],
 			]
 		);
+	}
+
+	/**
+	 * Get a value-state font attr from the field focus font attr.
+	 *
+	 * @since ??
+	 *
+	 * @param array $font_attr Field font attr.
+	 *
+	 * @return array
+	 */
+	private static function get_select_rendered_text_focus_font_attr( array $font_attr ): array {
+		$font_breakpoints = $font_attr['font'] ?? [];
+
+		if ( ! is_array( $font_breakpoints ) ) {
+			return [];
+		}
+
+		$focus_font = [];
+
+		foreach ( $font_breakpoints as $breakpoint => $states ) {
+			$color = $states['focus']['color'] ?? null;
+
+			if ( ! $color ) {
+				continue;
+			}
+
+			$focus_font[ $breakpoint ] = [
+				'value' => [
+					'color' => $color,
+				],
+			];
+		}
+
+		if ( empty( $focus_font ) ) {
+			return [];
+		}
+
+		return [
+			'font' => $focus_font,
+		];
+	}
+
+	/**
+	 * Get a value-state font attr for default Select2 rendered text.
+	 *
+	 * @since ??
+	 *
+	 * @param array $font_attr Field font attr.
+	 *
+	 * @return array
+	 */
+	private static function get_select_rendered_text_value_font_attr( array $font_attr ): array {
+		$font_breakpoints = $font_attr['font'] ?? [];
+
+		if ( ! is_array( $font_breakpoints ) ) {
+			return [];
+		}
+
+		$value_font = [];
+
+		foreach ( $font_breakpoints as $breakpoint => $states ) {
+			$value      = $states['value'] ?? [];
+			$font_value = [];
+
+			if ( ! empty( $value['color'] ) ) {
+				$font_value['color'] = $value['color'];
+			}
+
+			if ( ! empty( $value['weight'] ) ) {
+				$font_value['weight'] = $value['weight'];
+			}
+
+			if ( empty( $font_value ) ) {
+				continue;
+			}
+
+			$value_font[ $breakpoint ] = [
+				'value' => $font_value,
+			];
+		}
+
+		if ( empty( $value_font ) ) {
+			return [];
+		}
+
+		return [
+			'font' => $value_font,
+		];
 	}
 
 	/**

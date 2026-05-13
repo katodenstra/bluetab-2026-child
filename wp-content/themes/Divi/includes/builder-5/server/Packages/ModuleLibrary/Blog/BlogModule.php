@@ -51,6 +51,14 @@ use ET\Builder\Framework\Breakpoint\Breakpoint;
  */
 class BlogModule implements DependencyInterface {
 	/**
+	 * Internal {@see \WP_Query} argument: base post offset (module attr) used only to correct
+	 * `found_posts` / `max_num_pages` when offset and pagination are combined.
+	 *
+	 * @since ??
+	 */
+	public const BLOG_PAGINATION_BASE_OFFSET_QUERY_VAR = 'et_builder_blog_pagination_base_offset';
+
+	/**
 	 * Track if the module is currently rendering to prevent unnecessary rendering and recursion.
 	 *
 	 * @var bool
@@ -346,7 +354,21 @@ class BlogModule implements DependencyInterface {
 					// Image.
 					$elements->style(
 						[
-							'attrName' => 'image',
+							'attrName'   => 'image',
+							'styleProps' => [
+								'fit'    => [
+									'selector' => "{$args['orderClass']} .et_pb_post .entry-featured-image-url img",
+								],
+								'sizing' => [
+									'propertySelectors' => [
+										'desktop' => [
+											'value' => [
+												'aspect-ratio' => "{$args['orderClass']} .entry-featured-image-url img",
+											],
+										],
+									],
+								],
+							],
 						]
 					),
 
@@ -742,6 +764,8 @@ class BlogModule implements DependencyInterface {
 			 *
 			 * @see: https://codex.wordpress.org/Making_Custom_Queries_using_Offset_and_Pagination
 			 */
+			$query_args[ self::BLOG_PAGINATION_BASE_OFFSET_QUERY_VAR ] = (int) $offset;
+
 			if ( $paged > 1 ) {
 				$query_args['offset'] = ( ( $paged - 1 ) * intval( $posts_per_page ) ) + intval( $offset );
 			} else {
@@ -749,40 +773,67 @@ class BlogModule implements DependencyInterface {
 			}
 		}
 
+		$blog_pagination_base_offset = isset( $query_args[ self::BLOG_PAGINATION_BASE_OFFSET_QUERY_VAR ] )
+			? (int) $query_args[ self::BLOG_PAGINATION_BASE_OFFSET_QUERY_VAR ]
+			: 0;
+
+		$should_apply_blog_offset_found_posts = 0 < $blog_pagination_base_offset
+			&& ! ( 'on' === $use_current_loop && is_singular() );
+
 		// Stash properties that will not be the same after wp_reset_query().
 		$wp_query_props = [
 			'current_post' => $wp_query->current_post,
 			'in_the_loop'  => $wp_query->in_the_loop,
 		];
 
-		if ( 'off' === $use_current_loop ) {
-			// Build module-driven query from module attrs (post type/count/categories/offset/pagination).
-			// This ensures parity with VB/REST behavior for non-singular contexts like 404 pages.
-			// Exclude current post from results when on singular pages (D4 pattern with Theme Builder support).
-			if ( is_singular() ) {
-				$current_post_id = self::_get_current_post_id_for_exclusion();
-				if ( $current_post_id > 0 ) {
-					if ( isset( $query_args['post__not_in'] ) ) {
-						$query_args['post__not_in'] = array_unique( array_merge( $query_args['post__not_in'], [ $current_post_id ] ) );
-					} else {
-						$query_args['post__not_in'] = [ $current_post_id ];
+		if ( $should_apply_blog_offset_found_posts ) {
+			add_filter( 'found_posts', [ self::class, 'filter_found_posts_for_blog_offset' ], 10, 2 );
+		}
+
+		try {
+			if ( 'off' === $use_current_loop ) {
+				// Build module-driven query from module attrs (post type/count/categories/offset/pagination).
+				// This ensures parity with VB/REST behavior for non-singular contexts like 404 pages.
+				// Exclude current post from results when on singular pages (D4 pattern with Theme Builder support).
+				if ( is_singular() ) {
+					$current_post_id = self::_get_current_post_id_for_exclusion();
+					if ( $current_post_id > 0 ) {
+						if ( isset( $query_args['post__not_in'] ) ) {
+							$query_args['post__not_in'] = array_unique( array_merge( $query_args['post__not_in'], [ $current_post_id ] ) );
+						} else {
+							$query_args['post__not_in'] = [ $current_post_id ];
+						}
 					}
 				}
+
+				query_posts( $query_args ); //phpcs:ignore WordPress.WP.DiscouragedFunctions.query_posts_query_posts -- intentionally done.
+			} elseif ( is_singular() ) {
+				// When `useCurrentLoop=on` on singular pages, force an empty result set to avoid loops over the current post.
+				query_posts( [ 'post__in' => [ 0 ] ] ); //phpcs:ignore WordPress.WP.DiscouragedFunctions.query_posts_query_posts -- intentionally done.
+			} else {
+				// When `useCurrentLoop=on` on non-singular pages, use current page loop semantics.
+				// Only allow certain args when `Posts For Current Page` is set.
+				$original = $wp_query->query_vars;
+				$custom   = array_intersect_key(
+					$query_args,
+					array_flip(
+						[
+							'posts_per_page',
+							'offset',
+							'paged',
+							self::BLOG_PAGINATION_BASE_OFFSET_QUERY_VAR,
+						]
+					)
+				);
+
+				// Trick WP into reporting this query as the main query so third party filters.
+				// that check for is_main_query() are applied.
+				$wp_the_query = $wp_query = new WP_Query( array_merge( $original, $custom ) ); //phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited,Squiz.PHP.DisallowMultipleAssignments.Found -- intentionally done.
 			}
-
-			query_posts( $query_args ); //phpcs:ignore WordPress.WP.DiscouragedFunctions.query_posts_query_posts -- intentionally done.
-		} elseif ( is_singular() ) {
-			// When `useCurrentLoop=on` on singular pages, force an empty result set to avoid loops over the current post.
-			query_posts( [ 'post__in' => [ 0 ] ] ); //phpcs:ignore WordPress.WP.DiscouragedFunctions.query_posts_query_posts -- intentionally done.
-		} else {
-			// When `useCurrentLoop=on` on non-singular pages, use current page loop semantics.
-			// Only allow certain args when `Posts For Current Page` is set.
-			$original = $wp_query->query_vars;
-			$custom   = array_intersect_key( $query_args, array_flip( [ 'posts_per_page', 'offset', 'paged' ] ) );
-
-			// Trick WP into reporting this query as the main query so third party filters.
-			// that check for is_main_query() are applied.
-			$wp_the_query = $wp_query = new WP_Query( array_merge( $original, $custom ) ); //phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited,Squiz.PHP.DisallowMultipleAssignments.Found -- intentionally done.
+		} finally {
+			if ( $should_apply_blog_offset_found_posts ) {
+				remove_filter( 'found_posts', [ self::class, 'filter_found_posts_for_blog_offset' ], 10 );
+			}
 		}
 
 		/**
@@ -962,6 +1013,27 @@ class BlogModule implements DependencyInterface {
 
 		self::$_rendering = false;
 		return $module_html;
+	}
+
+	/**
+	 * Reduce {@see \WP_Query::found_posts} for Blog module queries that use a base post offset,
+	 * so `max_num_pages` matches Codex guidance for offset + pagination.
+	 *
+	 * @since ??
+	 *
+	 * @param int      $found_posts The number of posts found.
+	 * @param WP_Query $query       The query instance.
+	 *
+	 * @return int
+	 */
+	public static function filter_found_posts_for_blog_offset( $found_posts, $query ) {
+		$base_offset = (int) $query->get( self::BLOG_PAGINATION_BASE_OFFSET_QUERY_VAR );
+
+		if ( 0 >= $base_offset ) {
+			return (int) $found_posts;
+		}
+
+		return max( 0, (int) $found_posts - $base_offset );
 	}
 
 	/**

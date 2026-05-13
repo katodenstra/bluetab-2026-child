@@ -28,9 +28,14 @@ function bluetab_normalize_heading_level($level, $default = 3)
 
 function bluetab_get_solution_variant($variant)
 {
-    $variant = bluetab_normalize_shortcode_variant($variant, ['strategy', 'readiness', 'products']);
+    $variant = bluetab_normalize_shortcode_variant($variant, ['strategy', 'readiness', 'products', 'generic']);
 
     $variants = [
+        'generic' => [
+            'page_class' => 'bt-solution-page--generic',
+            'card_class' => 'bt-solution-card--blue',
+            'wave_class' => 'bt-solution-wave--blue',
+        ],
         'strategy' => [
             'page_class' => 'bt-solution-page--strategy',
             'card_class' => 'bt-solution-card--blue',
@@ -454,7 +459,7 @@ function bluetab_success_cases_shortcode($atts)
     <section class="bt-success-cases" <?php echo $title !== '' ? 'aria-labelledby="' . esc_attr($title_id) . '"' : ''; ?>>
         <div class="bt-success-cases__inner">
             <?php if ($title !== ''): ?>
-                <h2 id="<?php echo esc_attr($title_id); ?>" class="bt-type-h4 bt-success-cases__title">
+                <h2 id="<?php echo esc_attr($title_id); ?>" class="bt-type-h3 bt-success-cases__title">
                     <?php echo esc_html($title); ?>
                 </h2>
             <?php endif; ?>

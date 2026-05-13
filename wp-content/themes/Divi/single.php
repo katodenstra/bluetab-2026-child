@@ -7,11 +7,24 @@
 
 use ET\Builder\Framework\Utility\PostUtility;
 
+$post_id                                = get_queried_object_id();
+$show_default_title                     = get_post_meta( $post_id, '_et_pb_show_title', true );
+$is_page_builder_used                   = et_pb_is_pagebuilder_used( $post_id );
+$is_builder_enabled_custom_post_type_single = $is_page_builder_used && et_builder_post_is_of_custom_post_type( $post_id );
+
+if ( $is_builder_enabled_custom_post_type_single ) {
+	add_filter(
+		'body_class',
+		static function( $classes ) {
+			$classes   = array_diff( $classes, [ 'et_right_sidebar', 'et_left_sidebar' ] );
+			$classes[] = 'et_no_sidebar';
+
+			return array_values( array_unique( $classes ) );
+		}
+	);
+}
+
 get_header();
-
-$show_default_title = get_post_meta( get_the_ID(), '_et_pb_show_title', true );
-
-$is_page_builder_used = et_pb_is_pagebuilder_used( get_the_ID() );
 
 ?>
 
@@ -36,9 +49,11 @@ $is_page_builder_used = et_pb_is_pagebuilder_used( get_the_ID() );
 		endwhile;
 		else :
 			?>
-	<div class="container">
-		<div id="content-area" class="clearfix">
-			<div id="left-area">
+	<?php if ( ! $is_builder_enabled_custom_post_type_single ) : ?>
+		<div class="container">
+			<div id="content-area" class="clearfix">
+				<div id="left-area">
+	<?php endif; ?>
 			<?php
 			while ( have_posts() ) :
 				the_post();
@@ -52,7 +67,7 @@ $is_page_builder_used = et_pb_is_pagebuilder_used( get_the_ID() );
 				do_action( 'et_before_post' );
 				?>
 				<article id="post-<?php the_ID(); ?>" <?php post_class( 'et_pb_post' ); ?>>
-					<?php if ( ( 'off' !== $show_default_title && $is_page_builder_used ) || ! $is_page_builder_used ) { ?>
+					<?php if ( ! $is_builder_enabled_custom_post_type_single && ( ( 'off' !== $show_default_title && $is_page_builder_used ) || ! $is_page_builder_used ) ) { ?>
 						<div class="et_post_meta_wrapper">
 							<h1 class="entry-title"><?php the_title(); ?></h1>
 
@@ -154,9 +169,11 @@ $is_page_builder_used = et_pb_is_pagebuilder_used( get_the_ID() );
 						);
 					?>
 					</div>
-					<div class="et_post_meta_wrapper">
+					<?php if ( ! $is_builder_enabled_custom_post_type_single ) : ?>
+						<div class="et_post_meta_wrapper">
+					<?php endif; ?>
 					<?php
-					if ( et_get_option( 'divi_468_enable' ) === 'on' ) {
+					if ( ! $is_builder_enabled_custom_post_type_single && et_get_option( 'divi_468_enable' ) === 'on' ) {
 						echo '<div class="et-single-post-ad">';
 						if ( et_get_option( 'divi_468_adsense' ) !== '' ) {
 							echo et_core_intentionally_unescaped( et_core_fix_unclosed_html_tags( et_get_option( 'divi_468_adsense' ) ), 'html' );
@@ -175,20 +192,28 @@ $is_page_builder_used = et_pb_is_pagebuilder_used( get_the_ID() );
 					 */
 					do_action( 'et_after_post' );
 
-					if ( ( comments_open() || get_comments_number() ) && 'on' === et_get_option( 'divi_show_postcomments', 'on' ) ) {
+					if (
+						! $is_builder_enabled_custom_post_type_single &&
+						( comments_open() || get_comments_number() ) &&
+						'on' === et_get_option( 'divi_show_postcomments', 'on' )
+					) {
 						// TODO fix(D4, Comments): Revert to comments_template after WordPress core resolves Trac #61468. [https://github.com/elegantthemes/Divi/issues/28338].
 						et_comments_template_safe( '', true );
 					}
 					?>
-					</div>
+					<?php if ( ! $is_builder_enabled_custom_post_type_single ) : ?>
+						</div>
+					<?php endif; ?>
 				</article>
 
 			<?php endwhile; ?>
-			</div>
+			<?php if ( ! $is_builder_enabled_custom_post_type_single ) : ?>
+				</div>
 
-			<?php get_sidebar(); ?>
+				<?php get_sidebar(); ?>
+			</div>
 		</div>
-	</div>
+			<?php endif; ?>
 	<?php endif; ?>
 </div>
 

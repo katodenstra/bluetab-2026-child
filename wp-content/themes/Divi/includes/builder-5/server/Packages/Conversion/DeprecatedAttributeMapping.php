@@ -115,7 +115,7 @@ class DeprecatedAttributeMapping {
 			'divi/post-content'                         => [ 'htmlAttributes' ],
 			'divi/post-nav'                             => [ 'htmlAttributes' ],
 			'divi/post-slider'                          => [ 'htmlAttributes', 'buttonRel', 'buttonEnable', 'buttonAlignment' ],
-			'divi/post-title'                           => [ 'htmlAttributes' ],
+			'divi/post-title'                           => [ 'htmlAttributes', 'postTitleFeaturedImageSizing' ],
 			'divi/pricing-table'                        => [ 'buttonRel', 'buttonEnable', 'buttonAlignment' ],
 			'divi/pricing-tables'                       => [ 'htmlAttributes', 'childrenButtonRel', 'childrenButtonEnable' ],
 			'divi/pricing-tables-item'                  => [ 'htmlAttributes', 'buttonEnable', 'buttonAlignment' ],
@@ -150,7 +150,7 @@ class DeprecatedAttributeMapping {
 			'divi/woocommerce-product-additional-info'  => [ 'htmlAttributes' ],
 			'divi/woocommerce-product-description'      => [ 'htmlAttributes' ],
 			'divi/woocommerce-product-gallery'          => [ 'htmlAttributes' ],
-			'divi/woocommerce-product-images'           => [ 'htmlAttributes' ],
+			'divi/woocommerce-product-images'           => [ 'htmlAttributes', 'imageForceFullwidth' ],
 			'divi/woocommerce-product-meta'             => [ 'htmlAttributes' ],
 			'divi/woocommerce-product-price'            => [ 'htmlAttributes' ],
 			'divi/woocommerce-product-rating'           => [ 'htmlAttributes' ],
@@ -210,6 +210,8 @@ class DeprecatedAttributeMapping {
 			'focusDropdownMenusLegacyColors'         => self::_get_focus_dropdown_menus_legacy_colors_definition(),
 			'focusDropdownMenusLegacyBorder'         => self::_get_focus_dropdown_menus_legacy_border_definition(),
 			'focusTooltipLegacyBorder'               => self::_get_focus_tooltip_legacy_border_definition(),
+			'imageForceFullwidth'                    => self::_get_image_force_fullwidth_definition(),
+			'postTitleFeaturedImageSizing'           => self::_get_post_title_featured_image_sizing_definition(),
 		];
 	}
 
@@ -1153,6 +1155,67 @@ class DeprecatedAttributeMapping {
 				'attrName' => 'image.innerContent',
 				'preset'   => [ 'html' ],
 				'subName'  => 'rel',
+			],
+		];
+	}
+
+	/**
+	 * Get image force fullwidth deprecated attribute definition.
+	 *
+	 * Preserves legacy Woo Product Images fullwidth toggle for migration.
+	 *
+	 * @since ??
+	 *
+	 * @return array Array of imageForceFullwidth deprecated attribute mappings.
+	 */
+	private static function _get_image_force_fullwidth_definition() {
+		return [
+			'image.advanced.forceFullwidth' => [
+				'attrName' => 'image.advanced.forceFullwidth',
+				'preset'   => [ 'style' ],
+			],
+		];
+	}
+
+	/**
+	 * Get Post Title featured image sizing deprecated attribute definition.
+	 *
+	 * Preserves legacy Post Title featured image sizing and fullwidth attrs for migration.
+	 *
+	 * @since ??
+	 *
+	 * @return array Array of postTitleFeaturedImageSizing deprecated attribute mappings.
+	 */
+	private static function _get_post_title_featured_image_sizing_definition() {
+		return [
+			'featuredImage.advanced.forceFullwidth'      => [
+				'attrName' => 'featuredImage.advanced.forceFullwidth',
+				'preset'   => [ 'style' ],
+			],
+			'featuredImage.decoration.sizing__width'     => [
+				'attrName' => 'image.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'width',
+			],
+			'featuredImage.decoration.sizing__maxWidth'  => [
+				'attrName' => 'image.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'maxWidth',
+			],
+			'featuredImage.decoration.sizing__height'    => [
+				'attrName' => 'image.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'height',
+			],
+			'featuredImage.decoration.sizing__maxHeight' => [
+				'attrName' => 'image.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'maxHeight',
+			],
+			'featuredImage.decoration.sizing__alignment' => [
+				'attrName' => 'image.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'alignment',
 			],
 		];
 	}

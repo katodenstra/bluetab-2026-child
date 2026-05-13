@@ -192,6 +192,18 @@ class GlobalData {
 
 		$printed_opacity = null !== $opacity && ( 100 !== $opacity || $has_explicit_opacity ) ? ' / ' . ( $opacity / 100 ) : '';
 
+		// Build a single relative-HSL component (h/s/l) with a normalized +/- operator.
+		$format_component = function ( $base, $adjustment ) {
+			$operator = $adjustment >= 0 ? ' + ' : ' - ';
+			return "calc({$base}{$operator}" . abs( $adjustment ) . ')';
+		};
+
+		$format_saturation_component = function ( $adjustment ) use ( $format_component ) {
+			$component = $format_component( 's', $adjustment );
+			// Clamp negative saturation math so emitted relative colors never go below valid `s = 0`.
+			return $adjustment < 0 ? "max(0, {$component})" : $component;
+		};
+
 		// Preserve explicit 100% opacity override by printing `/ 1`.
 		if (
 			0 === (int) $hue &&
@@ -202,7 +214,11 @@ class GlobalData {
 			return $css_variable;
 		}
 
-		return "hsl(from {$css_variable} calc(h + {$hue}) calc(s + {$saturation}) calc(l + {$lightness}){$printed_opacity})";
+		$h_component = $format_component( 'h', $hue );
+		$s_component = $format_saturation_component( $saturation );
+		$l_component = $format_component( 'l', $lightness );
+
+		return "hsl(from {$css_variable} {$h_component} {$s_component} {$l_component}{$printed_opacity})";
 	}
 
 	/**
@@ -1466,11 +1482,15 @@ class GlobalData {
 				// If accumulateFilters is true and we have existing HSL, combine values mathematically.
 				if ( $accumulate_filters && str_starts_with( $resolved_base_color, 'hsl(from' ) ) {
 					// Extract existing HSL values and combine with current settings.
-					if ( preg_match( '/hsl\(from ([^)]+) calc\(h ([+-]) ([^)]+)\) calc\(s ([+-]) ([^)]+)\) calc\(l ([+-]) ([^)]+)\)/', $resolved_base_color, $matches ) ) {
-						$base_color_value = $matches[1];
-						$base_hue         = intval( $matches[3] ) * ( '+' === $matches[2] ? 1 : -1 );
-						$base_saturation  = intval( $matches[5] ) * ( '+' === $matches[4] ? 1 : -1 );
-						$base_lightness   = intval( $matches[7] ) * ( '+' === $matches[6] ? 1 : -1 );
+					// Regex test: https://regex101.com/r/rsOSOm/2.
+					if ( preg_match( '/hsl\(from ([^)]+) calc\(h ([+-]) ([^)]+)\) (?:calc\(s ([+-]) ([^)]+)\)|max\(0,\s*calc\(s ([+-]) ([^)]+)\)\)) calc\(l ([+-]) ([^)]+)\)/', $resolved_base_color, $matches ) ) {
+						$base_color_value            = $matches[1];
+						$base_hue                    = intval( $matches[3] ) * ( '+' === $matches[2] ? 1 : -1 );
+						$saturation_sign             = '' !== $matches[4] ? $matches[4] : $matches[6];
+						$saturation_value            = '' !== $matches[5] ? $matches[5] : $matches[7];
+						$base_saturation             = intval( $saturation_value ) * ( '+' === $saturation_sign ? 1 : -1 );
+						$base_lightness              = intval( $matches[9] ) * ( '+' === $matches[8] ? 1 : -1 );
+						$has_bounded_base_saturation = '' !== $matches[6] && '' !== $matches[7];
 
 						// Combine values mathematically.
 						$combined_hue        = $base_hue + $current_hue;
@@ -1478,8 +1498,19 @@ class GlobalData {
 						$combined_lightness  = $base_lightness + $current_lightness;
 
 						// Generate new CSS relative HSL with accumulated values.
-						$h_component  = $combined_hue >= 0 ? "calc(h + {$combined_hue})" : 'calc(h - ' . abs( $combined_hue ) . ')';
-						$s_component  = $combined_saturation >= 0 ? "calc(s + {$combined_saturation})" : 'calc(s - ' . abs( $combined_saturation ) . ')';
+						$h_component = $combined_hue >= 0 ? "calc(h + {$combined_hue})" : 'calc(h - ' . abs( $combined_hue ) . ')';
+						if ( $has_bounded_base_saturation ) {
+							$base_bounded_saturation = $base_saturation >= 0
+								? "max(0, calc(s + {$base_saturation}))"
+								: 'max(0, calc(s - ' . abs( $base_saturation ) . '))';
+							$s_component             = 0 === $current_saturation
+								? $base_bounded_saturation
+								: 'calc(' . $base_bounded_saturation . ( $current_saturation >= 0 ? ' + ' : ' - ' ) . abs( $current_saturation ) . ')';
+						} else {
+							$s_component = $combined_saturation >= 0
+								? "calc(s + {$combined_saturation})"
+								: 'max(0, calc(s - ' . abs( $combined_saturation ) . '))';
+						}
 						$l_component  = $combined_lightness >= 0 ? "calc(l + {$combined_lightness})" : 'calc(l - ' . abs( $combined_lightness ) . ')';
 						$opacity_part = ( null !== $current_opacity && ( 100 !== $current_opacity || $has_explicit_opacity ) )
 							? ' / ' . ( $current_opacity / 100 )
@@ -1588,7 +1619,7 @@ class GlobalData {
 		};
 
 		$h_component = $format_component( 'h', $hue );
-		$s_component = $format_component( 's', $saturation );
+		$s_component = $saturation < 0 ? 'max(0, ' . $format_component( 's', $saturation ) . ')' : $format_component( 's', $saturation );
 		$l_component = $format_component( 'l', $lightness );
 
 		// Handle opacity: include explicit 100% as `/ 1` so it can override base alpha values.

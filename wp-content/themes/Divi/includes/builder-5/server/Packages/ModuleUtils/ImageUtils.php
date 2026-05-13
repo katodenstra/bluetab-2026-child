@@ -246,4 +246,24 @@ class ImageUtils {
 
 		return false;
 	}
+
+	/**
+	 * Check if a URL has an image/video extension, or a JSON extension when requested.
+	 *
+	 * Uses self::is_file_extension() to properly handle query strings and fragments.
+	 *
+	 * @since ??
+	 *
+	 * @param string $url          The URL to check.
+	 * @param bool   $include_json Whether to treat `.json` as transferable. Default `false`.
+	 *
+	 * @return bool True if the URL has a supported extension, false otherwise.
+	 */
+	public static function is_media_url( string $url, bool $include_json = false ): bool {
+		if ( self::is_image_or_video_url( $url ) ) {
+			return true;
+		}
+
+		return $include_json && self::is_file_extension( $url, 'json' );
+	}
 }

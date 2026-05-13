@@ -452,6 +452,18 @@
       "selector": "{{selector}} .et_portfolio_image",
       "supportsCustomAttributes": true,
       "styleProps": {
+        "fit": {
+          "selector": "{{selector}} .et_portfolio_image img"
+        },
+        "sizing": {
+          "propertySelectors": {
+            "desktop": {
+              "value": {
+                "aspect-ratio": "{{selector}} .et_portfolio_image img"
+              }
+            }
+          }
+        },
         "border": {
           "selector": "{{selector}}.et_pb_filterable_portfolio .et_portfolio_image"
         },
@@ -470,54 +482,20 @@
       },
       "settings": {
         "decoration": {
-          "border": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "attrName": "image.decoration.border",
-              "priority": 10,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/border",
-                "props": {
-                  "grouped": true,
-                  "fieldLabel": "Image"
-                }
-              }
-            }
-          },
-          "boxShadow": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "attrName": "image.decoration.boxShadow",
-              "priority": 10,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/box-shadow",
-                "props": {
-                  "grouped": true,
-                  "fieldLabel": "Image"
-                }
-              }
-            }
-          },
-          "filters": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "attrName": "image.decoration.filters",
-              "priority": 10,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/filters",
-                "props": {
-                  "grouped": true,
-                  "fieldLabel": "Image"
-                }
+          "image": {
+            "panel": "design",
+            "groupType": "group",
+            "groupName": "image",
+            "priority": 10,
+            "component": {
+              "type": "group",
+              "name": "divi/image",
+              "props": {
+                "attrName": "image",
+                "groupLabel": "Image",
+                "grouped": true,
+                "dynamicSubgroupHost": true,
+                "presetGroup": "divi/image"
               }
             }
           }
@@ -714,17 +692,6 @@
           "name": "divi/composite",
           "props": {
             "groupLabel": "Overlay"
-          }
-        }
-      },
-      "designImage": {
-        "panel": "design",
-        "priority": 10,
-        "groupName": "designImage",
-        "component": {
-          "name": "divi/composite",
-          "props": {
-            "groupLabel": "Image"
           }
         }
       },

@@ -2909,7 +2909,7 @@ class ET_Core_Portability {
 					if ( ! $insert = term_exists( $term['slug'], $term['taxonomy'] ) ) {
 						$insert = wp_insert_term( $term['name'], $term['taxonomy'], array(
 							'slug'        => $term['slug'],
-							'description' => $term['description'],
+							'description' => isset( $term['description'] ) ? $term['description'] : '',
 							'parent'      => intval( $parent ),
 						) );
 					}

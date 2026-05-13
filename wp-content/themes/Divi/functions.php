@@ -5832,22 +5832,22 @@ function et_divi_add_customizer_css() {
 			<?php echo $css( '.et_pb_best_value', false ); ?> {
 				font-size: <?php echo esc_html( intval( $body_font_size * 1.14 ) ); ?>px;
 			}
-		<?php if ( '#666666' !== $body_font_color) { ?>
-			<?php echo esc_html( $body_color_selector_sibling ); ?>
-			<?php echo esc_html( $body_color_selector ); ?> {
-				color: <?php echo esc_html( $body_font_color ); ?>;
-			}
-		<?php } ?>
-		<?php if ( '#666666' !== $body_header_color ) { ?>
-			<?php echo $css( 'h1' ); ?>,
-			<?php echo $css( 'h2' ); ?>,
-			<?php echo $css( 'h3' ); ?>,
-			<?php echo $css( 'h4' ); ?>,
-			<?php echo $css( 'h5' ); ?>,
-			<?php echo $css( 'h6' ); ?> {
-				color: <?php echo esc_html( $body_header_color ); ?>;
-			}
-		<?php } ?>
+	<?php if ( '#666666' !== $body_font_color ) { ?>
+		<?php echo esc_html( $body_color_selector_sibling ); ?>
+		<?php echo esc_html( $body_color_selector ); ?> {
+			color: var(--gcid-body-color, <?php echo esc_html( $body_font_color ); ?>);
+		}
+	<?php } ?>
+	<?php if ( '#666666' !== $body_header_color ) { ?>
+		<?php echo $css( 'h1' ); ?>,
+		<?php echo $css( 'h2' ); ?>,
+		<?php echo $css( 'h3' ); ?>,
+		<?php echo $css( 'h4' ); ?>,
+		<?php echo $css( 'h5' ); ?>,
+		<?php echo $css( 'h6' ); ?> {
+			color: var(--gcid-heading-color, <?php echo esc_html( $body_header_color ); ?>);
+		}
+	<?php } ?>
 		<?php if ( 1.7 !== $body_font_height ) { ?>
 			<?php echo esc_html( $body_selector_sibling ); ?>
 			<?php echo esc_html( $body_selector ); ?> {
@@ -5998,9 +5998,9 @@ function et_divi_add_customizer_css() {
 				max-width: <?php echo esc_html( intval( et_get_option( 'content_width', '1080' ) ) + 160 ); ?>px;
 			}
 		<?php } ?>
-		<?php if ( $link_color !== '#2ea3f2' ) { ?>
-			<?php echo $css( 'a' ); ?> { color: <?php echo esc_html( $link_color ); ?>; }
-		<?php } ?>
+	<?php if ( $link_color !== '#2ea3f2' ) { ?>
+		<?php echo $css( 'a' ); ?> { color: var(--gcid-link-color, <?php echo esc_html( $link_color ); ?>); }
+	<?php } ?>
 		<?php if ( $primary_nav_bg !== '#ffffff' ) { ?>
 			#main-header,
 			#main-header .nav li ul,
@@ -8466,7 +8466,7 @@ function et_layout_post_class( $classes ) {
 
 	$post_id       = get_the_ID();
 	$post_type     = get_post_type( $post_id );
-	$template_name = ! empty( $template ) ? basename( $template ) : ''; // phpcs:ignore Generic.WhiteSpace.ScopeIndent.Incorrect -- We decided to ignore indentation change.
+	$template_name = ( is_string( $template ) && ! empty( $template ) ) ? basename( $template ) : ''; // phpcs:ignore Generic.WhiteSpace.ScopeIndent.Incorrect -- We decided to ignore indentation change.
 
 	if ( 'page' === $post_type ) {
 		// Don't add the class to pages.

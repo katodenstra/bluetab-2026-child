@@ -2401,6 +2401,25 @@ class GlobalPreset {
 					continue;
 				}
 
+				$source_group_id          = $current_group_preset_data['groupId'] ?? '';
+				$resolved_nested_group_id = $nested_group_id;
+
+				// Remap nested host paths from the preset's authoring context to the current usage host.
+				// Example: applying a `divi/image` preset authored under `image` to Blurb `imageIcon`
+				// should register nested refs as `imageIcon.*` (not `image.*`).
+				if (
+					is_string( $source_group_id )
+					&& '' !== $source_group_id
+					&& is_string( $current_group_id )
+					&& '' !== $current_group_id
+					&& GlobalPresetItemGroupAttrNameResolver::is_attr_name_prefix_matched( $nested_group_id, $source_group_id )
+				) {
+					$resolved_nested_group_id = GlobalPresetItemGroupAttrNameResolver::replace_attr_name_prefix(
+						$nested_group_id,
+						$current_group_id
+					);
+				}
+
 				$nested_group_name = $nested_group_ref['groupName'] ?? '';
 				if ( empty( $nested_group_name ) ) {
 					continue;
@@ -2411,21 +2430,21 @@ class GlobalPreset {
 					continue;
 				}
 
-				$existing_preset_ids = self::normalize_preset_stack( $group_presets[ $nested_group_id ]['presetId'] ?? '' );
+				$existing_preset_ids = self::normalize_preset_stack( $group_presets[ $resolved_nested_group_id ]['presetId'] ?? '' );
 				$stacked_preset_ids  = array_values( array_unique( array_merge( $existing_preset_ids, $nested_preset_ids ) ) );
 
-				$group_presets[ $nested_group_id ] = [
+				$group_presets[ $resolved_nested_group_id ] = [
 					'presetId'  => $stacked_preset_ids,
-					'groupName' => $group_presets[ $nested_group_id ]['groupName'] ?? $nested_group_name,
+					'groupName' => $group_presets[ $resolved_nested_group_id ]['groupName'] ?? $nested_group_name,
 				];
 
-				$nested_group_ids[ $nested_group_id ] = true;
-				if ( ! isset( $nested_preset_ids_by_group[ $nested_group_id ] ) ) {
-					$nested_preset_ids_by_group[ $nested_group_id ] = [];
+				$nested_group_ids[ $resolved_nested_group_id ] = true;
+				if ( ! isset( $nested_preset_ids_by_group[ $resolved_nested_group_id ] ) ) {
+					$nested_preset_ids_by_group[ $resolved_nested_group_id ] = [];
 				}
-				$nested_preset_ids_by_group[ $nested_group_id ] = array_values(
+				$nested_preset_ids_by_group[ $resolved_nested_group_id ] = array_values(
 					array_unique(
-						array_merge( $nested_preset_ids_by_group[ $nested_group_id ], $nested_preset_ids )
+						array_merge( $nested_preset_ids_by_group[ $resolved_nested_group_id ], $nested_preset_ids )
 					)
 				);
 
@@ -2433,7 +2452,7 @@ class GlobalPreset {
 				foreach ( $nested_preset_ids as $nested_preset_id ) {
 					if ( ! empty( $nested_preset_id ) ) {
 						$nested_group_preset_queue[] = [
-							'groupId'   => $nested_group_id,
+							'groupId'   => $resolved_nested_group_id,
 							'groupName' => $nested_group_name,
 							'presetId'  => $nested_preset_id,
 						];
@@ -2782,6 +2801,7 @@ class GlobalPreset {
 				'filters'     => 'divi/filters',
 				'font'        => 'divi/font',
 				'headingFont' => 'divi/font-header',
+				'image'       => 'divi/image',
 				'overflow'    => 'divi/overflow',
 				'position'    => 'divi/position',
 				'scroll'      => 'divi/scroll',

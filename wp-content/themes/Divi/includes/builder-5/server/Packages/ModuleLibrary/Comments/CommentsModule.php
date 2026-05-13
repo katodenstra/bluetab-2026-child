@@ -316,7 +316,18 @@ class CommentsModule implements DependencyInterface {
 					// Image.
 					$elements->style(
 						[
-							'attrName' => 'image',
+							'attrName'   => 'image',
+							'styleProps' => [
+								'sizing' => [
+									'propertySelectors' => [
+										'desktop' => [
+											'value' => [
+												'aspect-ratio' => "{$args['orderClass']} .commentlist img.avatar",
+											],
+										],
+									],
+								],
+							],
 						]
 					),
 					// Form Fields.

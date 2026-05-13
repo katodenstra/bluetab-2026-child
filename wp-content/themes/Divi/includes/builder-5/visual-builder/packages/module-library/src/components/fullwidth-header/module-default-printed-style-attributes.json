@@ -45,14 +45,5 @@
         }
       }
     }
-  },
-  "content": {
-    "advanced": {
-      "maxWidth": {
-        "desktop": {
-          "value": "100%"
-        }
-      }
-    }
   }
 }

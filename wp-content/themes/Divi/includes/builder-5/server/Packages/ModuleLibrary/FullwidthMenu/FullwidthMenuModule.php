@@ -187,6 +187,13 @@ class FullwidthMenuModule implements DependencyInterface {
 						},
 					],
 					[
+						'selector'      => $selector . ' .et_pb_menu__cart-button .et_pb_menu__cart-count',
+						'data'          => $attrs['cartQuantity']['advanced']['show'] ?? [],
+						'valueResolver' => function ( $value ) {
+							return 'on' === ( $value ?? 'off' ) ? 'visible' : 'hidden';
+						},
+					],
+					[
 						'selector'      => implode( [ $selector . ' .et_pb_menu__icon et_pb_menu__search-button', $selector . ' .et_pb_menu__search-container' ] ),
 						'data'          => $attrs['searchIcon']['advanced']['show'] ?? [],
 						'valueResolver' => function ( $value ) {
@@ -564,7 +571,14 @@ class FullwidthMenuModule implements DependencyInterface {
 			return '';
 		}
 
-		$show_cart_quantity = 'on' === $attrs['cartQuantity']['advanced']['show']['desktop']['value'] ?? 'off';
+		$show_cart_quantity = ModuleUtils::has_value(
+			$attrs['cartQuantity']['advanced']['show'] ?? [],
+			[
+				'valueResolver' => function ( $value ) {
+					return 'on' === $value;
+				},
+			]
+		);
 
 		$icon_classes = HTMLUtility::classnames(
 			[

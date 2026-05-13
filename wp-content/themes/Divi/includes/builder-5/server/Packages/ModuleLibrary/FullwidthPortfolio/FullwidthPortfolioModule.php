@@ -32,6 +32,7 @@ use ET\Builder\Packages\Module\Options\Element\ElementClassnames;
 use ET\Builder\Packages\Module\Options\Text\TextClassnames;
 use ET\Builder\Packages\Module\Options\Text\TextStyle;
 use ET\Builder\Packages\Module\Options\Layout\LayoutStyle;
+use ET\Builder\Packages\ModuleLibrary\Common\ImageWrapperAnimation;
 use ET\Builder\Packages\ModuleLibrary\FullwidthPortfolio\FullwidthPortfolioPresetAttrsMap;
 use ET\Builder\Packages\ModuleLibrary\ModuleRegistration;
 use ET\Builder\Packages\ModuleUtils\ChildrenUtils;
@@ -93,17 +94,12 @@ class FullwidthPortfolioModule implements DependencyInterface {
 		$classnames_instance->add( 'et_pb_fullwidth_portfolio_grid', ! $is_layout_carousel );
 		$classnames_instance->add( 'clearfix', ! $is_layout_carousel );
 
-		$decoration_attrs = array_merge(
-			$attrs['module']['decoration'] ?? [],
-			$attrs['image']['decoration'] ?? []
-		);
-
 		// Module.
 		$classnames_instance->add(
 			ElementClassnames::classnames(
 				[
 					'attrs' => array_merge(
-						$decoration_attrs ?? [],
+						$attrs['module']['decoration'] ?? [],
 						[
 							'link' => $args['attrs']['module']['advanced']['link'] ?? [],
 						]
@@ -247,6 +243,31 @@ class FullwidthPortfolioModule implements DependencyInterface {
 	}
 
 	/**
+	 * Fullwidth Portfolio image aspect-ratio companion CSS declarations.
+	 *
+	 * @since ??
+	 *
+	 * @param array $params {
+	 *     An array of parameters.
+	 *
+	 *     @type string $selector    Selector.
+	 *     @type array  $attr        Attribute.
+	 *     @type bool   $important   Important.
+	 *     @type string $returnType  Return type.
+	 * }
+	 *
+	 * @return string
+	 */
+	public static function fullwidth_portfolio_image_aspect_ratio_style_declaration( array $params ): string {
+		$declarations = new StyleDeclarations( $params );
+
+		$declarations->add( 'height', 'auto' );
+		$declarations->add( 'min-height', 'auto' );
+
+		return $declarations->value();
+	}
+
+	/**
 	 * Set CSS styles to the module.
 	 *
 	 * This function is equivalent of JS function ModuleStyles located in
@@ -302,8 +323,54 @@ class FullwidthPortfolioModule implements DependencyInterface {
 		$order_class                 = $args['orderClass'] ?? '';
 
 		// Check if flex layout is enabled for portfolioGrid.
-		$portfolio_grid_layout = $attrs['portfolioGrid']['decoration']['layout']['desktop']['value']['display'] ?? 'flex';
-		$is_flex_layout        = 'flex' === $portfolio_grid_layout;
+		$portfolio_grid_layout   = $attrs['portfolioGrid']['decoration']['layout']['desktop']['value']['display'] ?? 'flex';
+		$is_flex_layout          = 'flex' === $portfolio_grid_layout;
+		$image_sizing_attr       = $attrs['image']['decoration']['sizing'] ?? [];
+		$image_aspect_ratio_attr = [];
+		$has_image_height        = ModuleUtils::has_value(
+			$image_sizing_attr,
+			[
+				'subName' => 'height',
+			]
+		);
+		$has_image_min_height    = ModuleUtils::has_value(
+			$image_sizing_attr,
+			[
+				'subName' => 'minHeight',
+			]
+		);
+
+		foreach ( $image_sizing_attr as $breakpoint => $breakpoint_values ) {
+			if ( ! is_array( $breakpoint_values ) ) {
+				continue;
+			}
+
+			foreach ( $breakpoint_values as $state => $state_value ) {
+				if ( ! is_array( $state_value ) ) {
+					continue;
+				}
+
+				if ( ! array_key_exists( 'aspectRatio', $state_value ) ) {
+					continue;
+				}
+
+				$aspect_ratio_value = $state_value['aspectRatio'];
+
+				if ( is_scalar( $aspect_ratio_value ) && '' === strval( $aspect_ratio_value ) ) {
+					continue;
+				}
+
+				if ( ! is_scalar( $aspect_ratio_value ) && empty( $aspect_ratio_value ) ) {
+					continue;
+				}
+
+				$image_aspect_ratio_attr[ $breakpoint ][ $state ] = [
+					'aspectRatio' => $aspect_ratio_value,
+				];
+			}
+		}
+
+		$should_render_image_aspect_ratio_auto_height = ! empty( $image_aspect_ratio_attr ) && ! $has_image_height && ! $has_image_min_height;
 
 		Style::add(
 			[
@@ -429,7 +496,21 @@ class FullwidthPortfolioModule implements DependencyInterface {
 					// Image.
 					$elements->style(
 						[
-							'attrName' => 'image',
+							'attrName'   => 'image',
+							'styleProps' => [
+								'fit'    => [
+									'selector' => "{$order_class} .et_pb_portfolio_image img",
+								],
+								'sizing' => [
+									'propertySelectors' => [
+										'desktop' => [
+											'value' => [
+												'aspect-ratio' => "{$order_class} .et_pb_portfolio_image img",
+											],
+										],
+									],
+								],
+							],
 						]
 					),
 					// Custom Styles.
@@ -443,6 +524,17 @@ class FullwidthPortfolioModule implements DependencyInterface {
 							'stickyParentOrderClass' => $sticky_parent_order_class,
 						]
 					),
+					$should_render_image_aspect_ratio_auto_height ? CommonStyle::style(
+						[
+							'selector'               => "{$order_class} .et_pb_portfolio_image img",
+							'attr'                   => $image_aspect_ratio_attr,
+							'important'              => true,
+							'declarationFunction'    => [ self::class, 'fullwidth_portfolio_image_aspect_ratio_style_declaration' ],
+							'orderClass'             => $order_class,
+							'isInsideStickyModule'   => $is_inside_sticky_module,
+							'stickyParentOrderClass' => $sticky_parent_order_class,
+						]
+					) : null,
 					// Custom CSS.
 					CssStyle::style(
 						[
@@ -666,6 +758,7 @@ class FullwidthPortfolioModule implements DependencyInterface {
 			// Note : In D4 If image box shadow has inner position then has-box-shadow-overlay class is getting added
 			// into the image wrapper.
 			$image_has_box_shadow_overlay_classname = BoxShadowClassnames::has_overlay( $attrs['image']['decoration']['boxShadow'] ?? [] );
+			$image_wrapper_animation_classname      = ImageWrapperAnimation::wrapper_animation_classname( $attrs['image'] ?? [] );
 
 			// Portfolio item wrapper.
 			$portfolio_item_wrapper = HTMLUtility::render(
@@ -677,6 +770,7 @@ class FullwidthPortfolioModule implements DependencyInterface {
 								'et_pb_portfolio_image' => true,
 								"{$portfolio['orientation']}" => ! empty( $portfolio['orientation'] ),
 								"{$image_has_box_shadow_overlay_classname}" => ! empty( $image_has_box_shadow_overlay_classname ),
+								"{$image_wrapper_animation_classname}" => ! empty( $image_wrapper_animation_classname ),
 							]
 						),
 					],

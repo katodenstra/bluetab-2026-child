@@ -60,6 +60,83 @@ class ContactFormModule implements DependencyInterface {
 	}
 
 	/**
+	 * Keep Contact Form custom CSS hover behavior scoped to the child element target.
+	 *
+	 * For custom CSS fields that define explicit child selectors (for example, the
+	 * Contact Button field), this preserves child-level hover targeting by appending
+	 * `:hover` to the resolved selector in hover state. Sticky handling keeps
+	 * `.et_pb_sticky` on the module selector while preserving the child segment.
+	 *
+	 * @since ??
+	 *
+	 * @param array $params Selector function params.
+	 *
+	 * @return string
+	 */
+	public static function custom_css_selector_function( array $params ): string {
+		$selector = (string) ( $params['selector'] ?? '' );
+		$state    = (string) ( $params['state'] ?? 'value' );
+
+		if ( '' === $selector ) {
+			return $selector;
+		}
+
+		if ( 'sticky' === $state ) {
+			$selectors = array_filter(
+				array_map( 'trim', explode( ',', $selector ) ),
+				static function ( string $item ): bool {
+					return '' !== $item;
+				}
+			);
+
+			$sticky_selectors = array_map(
+				static function ( string $item ): string {
+					$parts = explode( ' ', $item );
+
+					if ( count( $parts ) < 2 ) {
+						return str_contains( $item, '.et_pb_sticky' ) ? $item : $item . '.et_pb_sticky';
+					}
+
+					$module_selector = $parts[0];
+					$child_parts     = implode( ' ', array_slice( $parts, 1 ) );
+					$sticky_module   = str_contains( $module_selector, '.et_pb_sticky' )
+						? $module_selector
+						: $module_selector . '.et_pb_sticky';
+
+					return $sticky_module . ' ' . $child_parts;
+				},
+				$selectors
+			);
+
+			return implode( ', ', array_unique( $sticky_selectors ) );
+		}
+
+		if ( 'hover' !== $state ) {
+			return $selector;
+		}
+
+		$selectors = array_filter(
+			array_map( 'trim', explode( ',', $selector ) ),
+			static function ( string $item ): bool {
+				return '' !== $item;
+			}
+		);
+
+		$hover_selectors = array_map(
+			static function ( string $item ): string {
+				if ( str_contains( $item, ':hover' ) ) {
+					return $item;
+				}
+
+				return $item . ':hover';
+			},
+			$selectors
+		);
+
+		return implode( ', ', $hover_selectors );
+	}
+
+	/**
 	 * Set CSS class names to the module.
 	 *
 	 * This function is equivalent of JS function moduleClassnames located in
@@ -290,6 +367,7 @@ class ContactFormModule implements DependencyInterface {
 		$radio_attrs                               = RadioFieldAndIconAttrs::get( $attrs['radio'] ?? [] );
 		$radio_attr                                = $radio_attrs['fieldAttr'];
 		$radio_icon_attr                           = $radio_attrs['iconAttr'];
+		$bottom_row_has_basic_captcha              = self::contact_form_bottom_row_has_basic_captcha( $attrs );
 
 		Style::add(
 			[
@@ -369,9 +447,57 @@ class ContactFormModule implements DependencyInterface {
 									[
 										'componentName' => 'divi/common',
 										'props'         => [
-											'selector' => "{$base_selector} {$base_order_class} .et_contact_bottom_container",
-											'attr'     => $attrs['button']['decoration']['sizing'] ?? [],
-											'declarationFunction' => [ self::class, 'button_alignment_declaration' ],
+											'selector'            => "{$base_selector} {$base_order_class} .et_contact_bottom_container",
+											'attr'                => $attrs['button']['decoration']['sizing'] ?? [],
+											'declarationFunction' => function ( $params ) use ( $bottom_row_has_basic_captcha ) {
+												$params['contactFormHasBasicCaptchaRow'] = $bottom_row_has_basic_captcha;
+
+												return self::button_alignment_declaration( $params );
+											},
+										],
+									],
+									[
+										'componentName' => 'divi/common',
+										'props'         => [
+											'selector'            => "{$base_selector} {$base_order_class} .et_contact_bottom_container .et_pb_button_wrapper",
+											'attr'                => $attrs['button']['decoration']['sizing'] ?? [],
+											'declarationFunction' => function ( $params ) {
+												return self::button_wrapper_sizing_declaration( $params );
+											},
+										],
+									],
+									[
+										'componentName' => 'divi/common',
+										'props'         => [
+											'selector'            => implode(
+												', ',
+												[
+													"{$base_selector} {$base_order_class} .et_contact_bottom_container .et_pb_contact_right.et_pb_contact_field",
+													"{$base_selector} {$base_order_class} .et_contact_bottom_container .et_pb_contact_right.et_pb_contact_field label",
+												]
+											),
+											'attr'                => $attrs['button']['decoration']['sizing'] ?? [],
+											'declarationFunction' => function ( $params ) use ( $bottom_row_has_basic_captcha ) {
+												$params['contactFormHasBasicCaptchaRow'] = $bottom_row_has_basic_captcha;
+
+												return self::captcha_row_sizing_declaration( $params );
+											},
+										],
+									],
+									[
+										'componentName' => 'divi/common',
+										'props'         => [
+											'selector'            => implode(
+												', ',
+												[
+													"{$base_selector} {$base_order_class}.et_pb_contact_form_container.et_pb_module .et_pb_button.et_pb_contact_submit",
+													"{$base_selector} {$base_order_class}.et_pb_contact_form_container.et_pb_module .et_pb_button.et_pb_contact_submit:hover",
+												]
+											),
+											'attr'                => $attrs['button']['decoration']['sizing'] ?? [],
+											'declarationFunction' => function ( $params ) {
+												return self::submit_button_layout_declaration( $params );
+											},
 										],
 									],
 								],
@@ -638,9 +764,10 @@ class ContactFormModule implements DependencyInterface {
 					// Module - Only for Custom CSS.
 					CssStyle::style(
 						[
-							'selector'  => $args['orderClass'] . '.et_pb_contact_form_container',
-							'attr'      => $attrs['css'] ?? [],
-							'cssFields' => self::custom_css(),
+							'selector'         => $args['orderClass'] . '.et_pb_contact_form_container',
+							'attr'             => $attrs['css'] ?? [],
+							'cssFields'        => self::custom_css(),
+							'selectorFunction' => [ self::class, 'custom_css_selector_function' ],
 						]
 					),
 				],
@@ -1129,16 +1256,68 @@ class ContactFormModule implements DependencyInterface {
 	}
 
 	/**
+	 * Whether basic math captcha renders in `.et_contact_bottom_container` before the submit button.
+	 *
+	 * Mirrors Visual Builder captcha visibility rules and PHP {@see self::render_element_basic_captcha()}.
+	 *
+	 * @since ??
+	 *
+	 * @param array $attrs Module attributes.
+	 *
+	 * @return bool True when captcha markup is output beside the button.
+	 */
+	public static function contact_form_bottom_row_has_basic_captcha( array $attrs ): bool {
+		$spam = $attrs['module']['advanced']['spamProtection']['desktop']['value'] ?? [];
+
+		return 'on' === ( $spam['useBasicCaptcha'] ?? 'on' )
+			&& 'off' === ( $spam['enabled'] ?? 'off' );
+	}
+
+	/**
+	 * Whether button sizing implies full-row width intent (`width` or lone `max-width` is `100%`).
+	 *
+	 * @since ??
+	 *
+	 * @param mixed $width     Width value for current breakpoint/state.
+	 * @param mixed $max_width Max-width value for current breakpoint/state.
+	 *
+	 * @return bool True when percentage sizing should use the full submit row width.
+	 */
+	public static function contact_form_button_is_full_row_width_intent( $width, $max_width ): bool {
+		$width_trimmed = trim( (string) $width );
+
+		if ( '100%' === $width_trimmed ) {
+			return true;
+		}
+
+		if ( '' === $width_trimmed && '' !== $max_width && null !== $max_width ) {
+			return '100%' === trim( (string) $max_width );
+		}
+
+		return false;
+	}
+
+	/**
 	 * Button alignment for contact form bottom container.
 	 *
 	 * @since ??
 	 *
-	 * @param array $params Style declaration parameters.
+	 * @param array $params Style declaration parameters. May include `contactFormHasBasicCaptchaRow` from Contact Form styles.
 	 *
 	 * @return string The CSS for button alignment.
 	 */
 	public static function button_alignment_declaration( array $params ): string {
-		$alignment = $params['attrValue']['alignment'] ?? '';
+		$attr_value                  = $params['attrValue'] ?? [];
+		$alignment                   = $attr_value['alignment'] ?? '';
+		$width                       = isset( $attr_value['width'] ) ? $attr_value['width'] : '';
+		$max_width                   = isset( $attr_value['maxWidth'] ) ? $attr_value['maxWidth'] : '';
+		$min_width                   = isset( $attr_value['minWidth'] ) ? $attr_value['minWidth'] : '';
+		$has_horizontal_sizing       = (
+			'' !== $width
+			|| '' !== $max_width
+			|| '' !== $min_width
+		);
+		$has_basic_captcha_bottom_row   = ! empty( $params['contactFormHasBasicCaptchaRow'] );
 
 		$style_declarations = new StyleDeclarations(
 			[
@@ -1146,6 +1325,41 @@ class ContactFormModule implements DependencyInterface {
 				'important'  => false,
 			]
 		);
+
+		// Stretch submit row; theme margins need !important (#49471).
+		if ( $has_horizontal_sizing ) {
+			$sizing_declarations = new StyleDeclarations(
+				[
+					'returnType' => 'string',
+					'important'  => true,
+				]
+			);
+
+			$sizing_declarations->add( 'width', '100%' );
+			$sizing_declarations->add( 'margin-left', '0' );
+			$sizing_declarations->add( 'margin-right', '0' );
+
+			if ( $has_basic_captcha_bottom_row ) {
+				// Theme spacing came from `.et_pb_contact_submit { margin-left: 18px }`, cleared by sizing overrides.
+				$sizing_declarations->add( 'gap', '18px' );
+				$sizing_declarations->add( 'align-items', 'flex-start' );
+			}
+
+			// Needed when `.et_pb_button_wrapper` uses `display:contents` for partial widths (#49471).
+			switch ( $alignment ) {
+				case 'left':
+					$sizing_declarations->add( 'justify-content', 'flex-start' );
+					break;
+				case 'center':
+					$sizing_declarations->add( 'justify-content', 'center' );
+					break;
+				default:
+					$sizing_declarations->add( 'justify-content', 'flex-end' );
+					break;
+			}
+
+			return $sizing_declarations->value();
+		}
 
 		switch ( $alignment ) {
 			case 'left':
@@ -1161,6 +1375,127 @@ class ContactFormModule implements DependencyInterface {
 				$style_declarations->add( 'margin-right', '0' );
 				break;
 		}
+
+		return $style_declarations->value();
+	}
+
+	/**
+	 * Button wrapper layout when horizontal sizing is set: full-row flex wrapper; partial widths use `display:contents`.
+	 *
+	 * @since ??
+	 *
+	 * @return string The CSS for the button wrapper, or empty string when no horizontal sizing is set.
+	 */
+	public static function button_wrapper_sizing_declaration( array $params ): string {
+		$attr_value = $params['attrValue'] ?? [];
+		$width      = isset( $attr_value['width'] ) ? $attr_value['width'] : '';
+		$max_width  = isset( $attr_value['maxWidth'] ) ? $attr_value['maxWidth'] : '';
+		$min_width  = isset( $attr_value['minWidth'] ) ? $attr_value['minWidth'] : '';
+
+		if ( '' === $width && '' === $max_width && '' === $min_width ) {
+			return '';
+		}
+
+		$is_full_row_width_button = self::contact_form_button_is_full_row_width_intent( $width, $max_width );
+
+		$style_declarations = new StyleDeclarations(
+			[
+				'returnType' => 'string',
+				'important'  => false,
+			]
+		);
+
+		// Partial widths: remove wrapper from layout so `%` sizing resolves against `.et_contact_bottom_container`.
+		if ( ! $is_full_row_width_button ) {
+			$style_declarations->add( 'display', 'contents' );
+
+			return $style_declarations->value();
+		}
+
+		$style_declarations->add( 'flex', '1 1 auto' );
+		$style_declarations->add( 'width', '100%' );
+		$style_declarations->add( 'min-width', '0' );
+		$style_declarations->add( 'justify-content', 'flex-start' );
+
+		return $style_declarations->value();
+	}
+
+	/**
+	 * Captcha column in the submit row: reserve horizontal space when button sizing is active (#49471).
+	 *
+	 * @since ??
+	 *
+	 * @param array $params Style declaration parameters. May include `contactFormHasBasicCaptchaRow` from Contact Form styles.
+	 *
+	 * @return string The CSS for the captcha cell and label, or empty string when not applicable.
+	 */
+	public static function captcha_row_sizing_declaration( array $params ): string {
+		if ( empty( $params['contactFormHasBasicCaptchaRow'] ) ) {
+			return '';
+		}
+
+		$attr_value            = $params['attrValue'] ?? [];
+		$width                 = isset( $attr_value['width'] ) ? $attr_value['width'] : '';
+		$max_width             = isset( $attr_value['maxWidth'] ) ? $attr_value['maxWidth'] : '';
+		$min_width             = isset( $attr_value['minWidth'] ) ? $attr_value['minWidth'] : '';
+		$has_horizontal_sizing = (
+			'' !== $width
+			|| '' !== $max_width
+			|| '' !== $min_width
+		);
+
+		if ( ! $has_horizontal_sizing ) {
+			return '';
+		}
+
+		$style_declarations = new StyleDeclarations(
+			[
+				'returnType' => 'string',
+				'important'  => true,
+			]
+		);
+
+		$style_declarations->add( 'flex-shrink', '0' );
+		$style_declarations->add( 'min-width', 'max-content' );
+		$style_declarations->add( 'white-space', 'nowrap' );
+
+		return $style_declarations->value();
+	}
+
+	/**
+	 * Submit element layout overrides when sizing is active (theme `.et_pb_contact_submit` uses inline-block + left margin).
+	 *
+	 * @since ??
+	 *
+	 * @param array $params Style declaration parameters.
+	 *
+	 * @return string The CSS for the submit button, or empty string when no horizontal sizing is set.
+	 */
+	public static function submit_button_layout_declaration( array $params ): string {
+		$attr_value            = $params['attrValue'] ?? [];
+		$width                 = isset( $attr_value['width'] ) ? $attr_value['width'] : '';
+		$max_width             = isset( $attr_value['maxWidth'] ) ? $attr_value['maxWidth'] : '';
+		$min_width             = isset( $attr_value['minWidth'] ) ? $attr_value['minWidth'] : '';
+		$has_horizontal_sizing = (
+			'' !== $width
+			|| '' !== $max_width
+			|| '' !== $min_width
+		);
+
+		if ( ! $has_horizontal_sizing ) {
+			return '';
+		}
+
+		$style_declarations = new StyleDeclarations(
+			[
+				'returnType' => 'string',
+				'important'  => true,
+			]
+		);
+
+		$style_declarations->add( 'display', 'block' );
+		$style_declarations->add( 'margin-left', '0' );
+		$style_declarations->add( 'margin-right', '0' );
 
 		return $style_declarations->value();
 	}

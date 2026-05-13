@@ -488,6 +488,13 @@ class PostNavigationPresetAttrsMap {
 				'preset'   => [ 'style' ],
 				'subName'  => 'maxHeight',
 			],
+			'module.decoration.sizing__aspectRatio' => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [
+					'style',
+				],
+				'subName'  => 'aspectRatio',
+			],
 			'links.decoration.spacing__margin'             => [
 				'attrName' => 'links.decoration.spacing',
 				'preset'   => [ 'style' ],

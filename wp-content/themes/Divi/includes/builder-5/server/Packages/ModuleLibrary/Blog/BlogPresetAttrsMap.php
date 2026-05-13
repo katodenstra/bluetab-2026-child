@@ -12,6 +12,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	die( 'Direct access forbidden.' );
 }
 
+use ET\Builder\Packages\Module\Options\Fit\FitPresetAttrsMap;
+use ET\Builder\Packages\Module\Options\Sizing\SizingPresetAttrsMap;
+
 
 /**
  * Class BlogPresetAttrsMap
@@ -36,7 +39,7 @@ class BlogPresetAttrsMap {
 			return $map;
 		}
 
-		return [
+		$map = [
 			'post.advanced.type'                           => [
 				'attrName' => 'post.advanced.type',
 				'preset'   => 'content',
@@ -2093,6 +2096,13 @@ class BlogPresetAttrsMap {
 				],
 				'subName'  => 'maxHeight',
 			],
+			'module.decoration.sizing__aspectRatio' => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [
+					'style',
+				],
+				'subName'  => 'aspectRatio',
+			],
 			'module.decoration.spacing__margin'            => [
 				'attrName' => 'module.decoration.spacing',
 				'preset'   => [
@@ -2922,5 +2932,11 @@ class BlogPresetAttrsMap {
 				'preset'   => [ 'html' ],
 			],
 		];
+
+		return array_merge(
+			$map,
+			SizingPresetAttrsMap::get_map( 'image.decoration.sizing' ),
+			FitPresetAttrsMap::get_map( 'image.decoration.fit' )
+		);
 	}
 }

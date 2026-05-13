@@ -156,6 +156,18 @@
       "supportsCustomAttributes": true,
       "elementType": "image",
       "styleProps": {
+        "fit": {
+          "selector": "{{selector}}.et_pb_slide .et_pb_slide_image img"
+        },
+        "sizing": {
+          "propertySelectors": {
+            "desktop": {
+              "value": {
+                "aspect-ratio": "{{selector}}.et_pb_slide .et_pb_slide_image img"
+              }
+            }
+          }
+        },
         "filters": {
           "selector": "{{selector}}.et_pb_slide .et_pb_slide_image"
         }
@@ -203,7 +215,7 @@
               "label": "Image Alignment",
               "description": "This setting determines the vertical alignment of your slide image. Your image can either be vertically centered, or aligned to the bottom of your slide.",
               "category": "layout",
-              "priority": 10,
+              "priority": 1,
               "render": true,
               "features": {
                 "sticky": false,
@@ -228,53 +240,7 @@
             }
           }
         },
-        "decoration": {
-          "border": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "priority": 20,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/border",
-                "props": {
-                  "grouped": true
-                }
-              }
-            }
-          },
-          "boxShadow": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "priority": 30,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/box-shadow",
-                "props": {
-                  "grouped": true
-                }
-              }
-            }
-          },
-          "filters": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "priority": 40,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/filters",
-                "props": {
-                  "grouped": true
-                }
-              }
-            }
-          }
-        }
+        "decoration": {}
       }
     },
     "title": {
@@ -841,10 +807,13 @@
         "priority": 30,
         "groupName": "designImage",
         "component": {
-          "name": "divi/composite",
+          "name": "divi/image",
           "props": {
+            "attrName": "image",
             "groupLabel": "Image",
-            "dynamicSubgroupHost": true
+            "grouped": true,
+            "dynamicSubgroupHost": true,
+            "presetGroup": "divi/image"
           }
         }
       },

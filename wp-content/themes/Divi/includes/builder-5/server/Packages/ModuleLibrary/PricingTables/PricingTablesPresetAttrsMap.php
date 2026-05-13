@@ -164,6 +164,7 @@ class PricingTablesPresetAttrsMap {
 			'button.decoration.button.decoration.sizing__size',
 			'button.decoration.button.decoration.sizing__height',
 			'button.decoration.button.decoration.sizing__maxHeight',
+			'button.decoration.button.decoration.sizing__aspectRatio',
 			'button.decoration.button.decoration.sizing__flexType',
 			'button.decoration.font.font__lineHeight',
 			'children.innerContent__rel',

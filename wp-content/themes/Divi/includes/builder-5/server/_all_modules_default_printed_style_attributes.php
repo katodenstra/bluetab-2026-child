@@ -179,6 +179,17 @@ return [
                     ]
                 ]
             ]
+        ],
+        'image' => [
+            'decoration' => [
+                'fit' => [
+                    'desktop' => [
+                        'value' => [
+                            'objectFit' => 'cover'
+                        ]
+                    ]
+                ]
+            ]
         ]
     ],
     'before-after-image' => [],
@@ -221,6 +232,18 @@ return [
                                     'width' => '1px'
                                 ]
                             ]
+                        ]
+                    ]
+                ]
+            ]
+        ],
+        'image' => [
+            'decoration' => [
+                'fit' => [
+                    'desktop' => [
+                        'value' => [
+                            'objectFit' => 'fill',
+                            'objectPosition' => 'center center'
                         ]
                     ]
                 ]
@@ -1010,15 +1033,6 @@ return [
                     ]
                 ]
             ]
-        ],
-        'content' => [
-            'advanced' => [
-                'maxWidth' => [
-                    'desktop' => [
-                        'value' => '100%'
-                    ]
-                ]
-            ]
         ]
     ],
     'fullwidth-image' => [
@@ -1463,7 +1477,20 @@ return [
             ]
         ]
     ],
-    'image' => [],
+    'image' => [
+        'image' => [
+            'decoration' => [
+                'fit' => [
+                    'desktop' => [
+                        'value' => [
+                            'objectFit' => 'fill',
+                            'objectPosition' => 'center center'
+                        ]
+                    ]
+                ]
+            ]
+        ]
+    ],
     'link' => [
         'module' => [
             'decoration' => [
@@ -1861,6 +1888,17 @@ return [
                             'value' => [
                                 'lineHeight' => '1em'
                             ]
+                        ]
+                    ]
+                ]
+            ]
+        ],
+        'image' => [
+            'decoration' => [
+                'sizing' => [
+                    'desktop' => [
+                        'value' => [
+                            'alignSelf' => 'stretch'
                         ]
                     ]
                 ]
@@ -2623,6 +2661,7 @@ return [
             ]
         ]
     ],
+    'svg' => [],
     'tab' => [
         'module' => [
             'decoration' => [
@@ -2782,6 +2821,13 @@ return [
         ],
         'portrait' => [
             'decoration' => [
+                'fit' => [
+                    'desktop' => [
+                        'value' => [
+                            'objectFit' => 'cover'
+                        ]
+                    ]
+                ],
                 'border' => [
                     'desktop' => [
                         'value' => [

@@ -28,6 +28,60 @@ use ET\Builder\Framework\Utility\StringUtility;
  */
 class MigrationUtils {
 
+	/**
+	 * Cache of parsed flat objects keyed by serialized content hash.
+	 *
+	 * @since ??
+	 *
+	 * @var array<string, array>
+	 */
+	private static $_flat_objects_cache = [];
+
+	/**
+	 * Maximum number of cached flat object entries.
+	 *
+	 * @since ??
+	 *
+	 * @var int
+	 */
+	private const MAX_FLAT_OBJECT_CACHE_ENTRIES = 40;
+
+	/**
+	 * Whether shared flat-object migration pipeline is active.
+	 *
+	 * @since ??
+	 *
+	 * @var bool
+	 */
+	private static $_shared_pipeline_active = false;
+
+	/**
+	 * Shared pipeline source content.
+	 *
+	 * @since ??
+	 *
+	 * @var string
+	 */
+	private static $_shared_pipeline_source_content = '';
+
+	/**
+	 * Shared pipeline flat objects.
+	 *
+	 * @since ??
+	 *
+	 * @var array|null
+	 */
+	private static $_shared_pipeline_flat_objects = null;
+
+	/**
+	 * Shared pipeline dirty flag.
+	 *
+	 * @since ??
+	 *
+	 * @var bool
+	 */
+	private static $_shared_pipeline_dirty = false;
+
 
 	/**
 	 * Get current post content.
@@ -513,6 +567,29 @@ class MigrationUtils {
 	}
 
 	/**
+	 * Serialize flat module objects and cache them for downstream migrations.
+	 *
+	 * @since ??
+	 *
+	 * @param array $flat_objects Flat module objects.
+	 *
+	 * @return string Serialized content.
+	 */
+	public static function serialize_flat_objects( array $flat_objects ): string {
+		if ( self::$_shared_pipeline_active ) {
+			self::$_shared_pipeline_flat_objects = $flat_objects;
+			self::$_shared_pipeline_dirty        = true;
+			return self::$_shared_pipeline_source_content;
+		}
+
+		$content = self::serialize_blocks( self::flat_objects_to_blocks( $flat_objects ) );
+
+		self::_cache_flat_objects_for_content( $content, $flat_objects );
+
+		return $content;
+	}
+
+	/**
 	 * Serialize a single block into a string.
 	 *
 	 * This function takes a single block array and converts it into its serialized string representation.
@@ -623,6 +700,17 @@ class MigrationUtils {
 	 * @see BlockParserBlock::reset_order_index() For order index cleanup
 	 */
 	public static function parse_serialized_post_into_flat_module_object( string $content, string $migration_name ): array {
+		if ( self::$_shared_pipeline_active && is_array( self::$_shared_pipeline_flat_objects ) ) {
+			return self::$_shared_pipeline_flat_objects;
+		}
+
+		$cache_key           = self::_get_content_cache_key( $content );
+		$cached_flat_objects = self::$_flat_objects_cache[ $cache_key ] ?? null;
+
+		if ( is_array( $cached_flat_objects ) ) {
+			return $cached_flat_objects;
+		}
+
 		BlockParserStore::set_layout(
 			[
 				'id'   => $migration_name,
@@ -637,7 +725,156 @@ class MigrationUtils {
 
 		BlockParserStore::reset_layout();
 
+		self::_cache_flat_objects_for_content( $content, $flat_objects );
+
 		return $flat_objects;
+	}
+
+	/**
+	 * Begin shared flat-object migration pipeline.
+	 *
+	 * @since ??
+	 *
+	 * @param string $content Source content.
+	 *
+	 * @return void
+	 */
+	public static function begin_shared_pipeline( string $content ): void {
+		self::$_shared_pipeline_active         = true;
+		self::$_shared_pipeline_source_content = $content;
+		self::$_shared_pipeline_flat_objects   = null;
+		self::$_shared_pipeline_dirty          = false;
+	}
+
+	/**
+	 * Finalize shared pipeline and return final content.
+	 *
+	 * @since ??
+	 *
+	 * @param string $fallback_content Fallback content when no changes occurred.
+	 *
+	 * @return string
+	 */
+	public static function finalize_shared_pipeline( string $fallback_content ): string {
+		if ( ! self::$_shared_pipeline_active ) {
+			return $fallback_content;
+		}
+
+		$final_content = $fallback_content;
+
+		if ( self::$_shared_pipeline_dirty && is_array( self::$_shared_pipeline_flat_objects ) ) {
+			$final_content = self::serialize_blocks( self::flat_objects_to_blocks( self::$_shared_pipeline_flat_objects ) );
+			self::_cache_flat_objects_for_content( $final_content, self::$_shared_pipeline_flat_objects );
+		}
+
+		self::$_shared_pipeline_active         = false;
+		self::$_shared_pipeline_source_content = '';
+		self::$_shared_pipeline_flat_objects   = null;
+		self::$_shared_pipeline_dirty          = false;
+
+		return $final_content;
+	}
+
+	/**
+	 * Create a stable cache key for serialized content.
+	 *
+	 * @since ??
+	 *
+	 * @param string $content Serialized content.
+	 *
+	 * @return string Cache key.
+	 */
+	private static function _get_content_cache_key( string $content ): string {
+		return md5( $content );
+	}
+
+	/**
+	 * Cache flat objects for serialized content.
+	 *
+	 * @since ??
+	 *
+	 * @param string $content      Serialized content.
+	 * @param array  $flat_objects Flat module objects.
+	 *
+	 * @return void
+	 */
+	private static function _cache_flat_objects_for_content( string $content, array $flat_objects ): void {
+		// Cache exact content form.
+		self::_set_flat_objects_cache_entry( $content, $flat_objects );
+
+		// Cache wrapped form to support migrations that wrap before parsing.
+		$wrapped_content = self::ensure_placeholder_wrapper( $content );
+		self::_set_flat_objects_cache_entry( $wrapped_content, $flat_objects );
+
+		// Cache unwrapped form to support migrations that parse raw content.
+		$unwrapped_content = self::_strip_placeholder_wrapper( $content );
+		if ( $unwrapped_content !== $content ) {
+			self::_set_flat_objects_cache_entry( $unwrapped_content, $flat_objects );
+		}
+	}
+
+	/**
+	 * Set a single flat-object cache entry.
+	 *
+	 * @since ??
+	 *
+	 * @param string $content      Serialized content.
+	 * @param array  $flat_objects Flat module objects.
+	 *
+	 * @return void
+	 */
+	private static function _set_flat_objects_cache_entry( string $content, array $flat_objects ): void {
+		$cache_key = self::_get_content_cache_key( $content );
+
+		if ( isset( self::$_flat_objects_cache[ $cache_key ] ) ) {
+			unset( self::$_flat_objects_cache[ $cache_key ] );
+		}
+
+		self::$_flat_objects_cache[ $cache_key ] = $flat_objects;
+
+		if ( count( self::$_flat_objects_cache ) <= self::MAX_FLAT_OBJECT_CACHE_ENTRIES ) {
+			return;
+		}
+
+		reset( self::$_flat_objects_cache );
+		$oldest_cache_key = key( self::$_flat_objects_cache );
+
+		if ( is_string( $oldest_cache_key ) ) {
+			unset( self::$_flat_objects_cache[ $oldest_cache_key ] );
+		}
+	}
+
+	/**
+	 * Strip placeholder wrapper from content when present.
+	 *
+	 * @since ??
+	 *
+	 * @param string $content Serialized content.
+	 *
+	 * @return string Unwrapped content.
+	 */
+	private static function _strip_placeholder_wrapper( string $content ): string {
+		$prefix = '<!-- wp:divi/placeholder -->';
+		$suffix = '<!-- /wp:divi/placeholder -->';
+
+		if (
+			! str_starts_with( $content, $prefix )
+			|| ! str_ends_with( $content, $suffix )
+		) {
+			return $content;
+		}
+
+		$unwrapped = substr( $content, strlen( $prefix ) );
+		if ( false === $unwrapped ) {
+			return $content;
+		}
+
+		$unwrapped = substr( $unwrapped, 0, -strlen( $suffix ) );
+		if ( false === $unwrapped ) {
+			return $content;
+		}
+
+		return trim( $unwrapped );
 	}
 
 	/**

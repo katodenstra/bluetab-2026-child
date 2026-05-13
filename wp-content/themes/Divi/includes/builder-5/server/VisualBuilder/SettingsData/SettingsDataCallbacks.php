@@ -30,6 +30,8 @@ use ET\Builder\Packages\Conversion\LegacyAttributeNames;
 use ET\Builder\Packages\GlobalData\GlobalPreset;
 use ET\Builder\Packages\GlobalLayout\GlobalLayout;
 use ET\Builder\Packages\Module\Layout\Components\DynamicContent\DynamicContentOptions;
+use ET\Builder\Packages\Module\Layout\Components\ModuleElements\ModuleElementsUtils;
+use ET\Builder\FrontEnd\BlockParser\BlockParserStore;
 use ET\Builder\Packages\ModuleUtils\ModuleUtils;
 use ET\Builder\Packages\WooCommerce\WooCommerceUtils;
 use ET\Builder\Services\EmailAccountService\EmailAccountService;
@@ -485,8 +487,9 @@ class SettingsDataCallbacks {
 		static $cache = [];
 
 		// TODO feat(D5, Translation): Handle locale switching for user profile language preference [https://github.com/elegantthemes/Divi/issues/45526].
-		global $post;
-		$post_id     = $post->ID ?? '';
+		// Match other after-app-load callbacks (e.g. off_canvas) by using request-scoped post context.
+		$post_id = self::get_current_post_id();
+
 		$user_locale = get_user_locale();
 
 		// Check permission for custom fields.
@@ -873,23 +876,466 @@ class SettingsDataCallbacks {
 				$request_type = 'home';
 			}
 
+			$image_dimensions_map = self::_get_image_dimensions_map_for_content( $raw_post_content );
+			self::_add_current_page_thumbnail_dimensions_to_map( $image_dimensions_map );
+
 			$return = [
-				'content'          => $raw_post_content,
-				'id'               => $post_id,
-				'title'            => get_the_title( $post_id ),
-				'type'             => $post_type,
-				'requestType'      => $request_type,
-				'status'           => $post_status,
-				'url'              => get_permalink( $post_id ),
-				'editUrl'          => get_edit_post_link( $post_id, 'raw' ),
-				'iframeSrc'        => ( isset( $_SERVER['HTTP_HOST'] ) && isset( $_SERVER['REQUEST_URI'] ) ) ?
+				'content'            => $raw_post_content,
+				'imageDimensionsMap' => $image_dimensions_map,
+				'id'                 => $post_id,
+				'title'              => get_the_title( $post_id ),
+				'type'               => $post_type,
+				'requestType'        => $request_type,
+				'status'             => $post_status,
+				'url'                => get_permalink( $post_id ),
+				'editUrl'            => get_edit_post_link( $post_id, 'raw' ),
+				'iframeSrc'          => ( isset( $_SERVER['HTTP_HOST'] ) && isset( $_SERVER['REQUEST_URI'] ) ) ?
 					( is_ssl() ? 'https://' : 'http://' ) . sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) )
 					. sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '',
-				'showPageCreation' => get_post_meta( $post_id, '_et_pb_show_page_creation', true ),
+				'showPageCreation'   => get_post_meta( $post_id, '_et_pb_show_page_creation', true ),
 			];
 		}
 
 		return $return;
+	}
+
+	/**
+	 * Add current-page thumbnail dimensions to image dimensions map.
+	 *
+	 * This ensures featured images sourced from currentPage settings
+	 * (e.g. Post Title module) can resolve width/height from store.
+	 *
+	 * @since ??
+	 *
+	 * @param array<string, array{width: string, height: string}> $dimensions_map Dimensions map accumulator.
+	 *
+	 * @return void
+	 */
+	private static function _add_current_page_thumbnail_dimensions_to_map( array &$dimensions_map ): void {
+		$current_page = self::current_page();
+
+		$thumbnail_id  = isset( $current_page['thumbnailId'] ) ? strval( $current_page['thumbnailId'] ) : '';
+		$thumbnail_url = is_string( $current_page['thumbnailUrl'] ?? null ) ? $current_page['thumbnailUrl'] : '';
+
+		if ( '' === $thumbnail_id && '' === $thumbnail_url ) {
+			return;
+		}
+
+		$response = ModuleElementsUtils::get_responsive_image_attrs(
+			[
+				'src' => $thumbnail_url,
+				'url' => $thumbnail_url,
+				'id'  => $thumbnail_id,
+			]
+		);
+
+		$resolved_width  = self::_sanitize_image_dimension_value( $response['width'] ?? null );
+		$resolved_height = self::_sanitize_image_dimension_value( $response['height'] ?? null );
+
+		if ( '' === $resolved_width || '' === $resolved_height ) {
+			return;
+		}
+
+		self::_add_image_dimensions_to_map(
+			$dimensions_map,
+			$thumbnail_id,
+			$thumbnail_url,
+			$thumbnail_url,
+			$resolved_width,
+			$resolved_height
+		);
+	}
+
+	/**
+	 * Build image dimensions map from serialized builder content.
+	 *
+	 * @since ??
+	 *
+	 * @param string $content Serialized builder block content.
+	 *
+	 * @return array<string, array{width: string, height: string}>
+	 */
+	private static function _get_image_dimensions_map_for_content( string $content ): array {
+		static $dimensions_map_cache = [];
+
+		if ( '' === $content ) {
+			return [];
+		}
+
+		$content_hash = md5( $content );
+		if ( isset( $dimensions_map_cache[ $content_hash ] ) ) {
+			return $dimensions_map_cache[ $content_hash ];
+		}
+
+		if ( ! self::_should_collect_image_dimensions_for_content( $content ) ) {
+			$dimensions_map_cache[ $content_hash ] = [];
+			return [];
+		}
+
+		$expanded_content = BlockParserStore::_expand_placeholder_wrapped_blocks( $content );
+		$blocks           = parse_blocks( $expanded_content );
+		if ( ! is_array( $blocks ) || empty( $blocks ) ) {
+			$dimensions_map_cache[ $content_hash ] = [];
+			return [];
+		}
+
+		$dimensions_map = [];
+		$response_cache = [];
+
+		self::_collect_image_dimensions_from_blocks( $blocks, $dimensions_map );
+		if ( empty( $dimensions_map ) ) {
+			self::_collect_image_dimensions_from_content_fallback( $content, $dimensions_map, $response_cache );
+		}
+
+		$dimensions_map_cache[ $content_hash ] = $dimensions_map;
+
+		return $dimensions_map;
+	}
+
+	/**
+	 * Determine if content should run image dimensions extraction.
+	 *
+	 * @since ??
+	 *
+	 * @param string $content Serialized builder block content.
+	 *
+	 * @return bool
+	 */
+	private static function _should_collect_image_dimensions_for_content( string $content ): bool {
+		if ( '' === $content || ! str_contains( $content, '<!-- wp:divi/' ) || ! str_contains( $content, '"innerContent"' ) ) {
+			return false;
+		}
+
+		$has_image_markers = str_contains( $content, '"src"' ) || str_contains( $content, '"url"' ) || str_contains( $content, '"id"' );
+
+		return $has_image_markers;
+	}
+
+	/**
+	 * Collect image dimensions from serialized content as a fallback.
+	 *
+	 * This fallback is used when block parsing misses deeply wrapped attrs,
+	 * while still keeping dimensions server-resolved and cached.
+	 *
+	 * @since ??
+	 *
+	 * @param string $content        Serialized builder block content.
+	 * @param array  $dimensions_map Dimensions map accumulator.
+	 * @param array  $response_cache Responsive attrs cache.
+	 *
+	 * @return void
+	 */
+	private static function _collect_image_dimensions_from_content_fallback( string $content, array &$dimensions_map, array &$response_cache ): void {
+		$ids                  = [];
+		$urls                 = [];
+		$image_url_value_keys = [ 'src', 'url' ];
+		$has_image_url_value  = false;
+
+		foreach ( $image_url_value_keys as $value_key ) {
+			if ( str_contains( $content, '"' . $value_key . '"' ) ) {
+				$has_image_url_value = true;
+				break;
+			}
+		}
+
+		if ( ! $has_image_url_value && ! str_contains( $content, '"id"' ) ) {
+			return;
+		}
+
+		$matched_ids = preg_match_all( '/"id"\s*:\s*"?(\d+)"?/', $content, $id_matches );
+		if ( false !== $matched_ids && ! empty( $id_matches[1] ) ) {
+			$ids = array_values( array_unique( array_filter( array_map( 'strval', $id_matches[1] ) ) ) );
+		}
+
+		if ( $has_image_url_value ) {
+			$matched_urls = preg_match_all( '/"(?:src|url)"\s*:\s*"([^"]+)"/', $content, $url_matches );
+			if ( false !== $matched_urls && ! empty( $url_matches[1] ) ) {
+				$urls = array_values(
+					array_unique(
+						array_filter(
+							array_map(
+								static function ( $url ): string {
+									return is_string( $url ) ? stripslashes( $url ) : '';
+								},
+								$url_matches[1]
+							)
+						)
+					)
+				);
+			}
+		}
+
+		foreach ( $ids as $id ) {
+			if ( ! wp_attachment_is_image( intval( $id ) ) ) {
+				continue;
+			}
+
+			$map_key = 'id:' . $id;
+			if ( isset( $dimensions_map[ $map_key ] ) ) {
+				continue;
+			}
+
+			$cache_key = $id . '||';
+			if ( ! isset( $response_cache[ $cache_key ] ) ) {
+				$response_cache[ $cache_key ] = ModuleElementsUtils::get_responsive_image_attrs(
+					[
+						'src' => '',
+						'url' => '',
+						'id'  => $id,
+					]
+				);
+			}
+
+			$resolved_width  = self::_sanitize_image_dimension_value( $response_cache[ $cache_key ]['width'] ?? null );
+			$resolved_height = self::_sanitize_image_dimension_value( $response_cache[ $cache_key ]['height'] ?? null );
+
+			if ( '' !== $resolved_width && '' !== $resolved_height ) {
+				self::_add_image_dimensions_to_map( $dimensions_map, $id, '', '', $resolved_width, $resolved_height );
+			}
+		}
+
+		foreach ( $urls as $url ) {
+			$map_key = 'src:' . $url;
+			if ( isset( $dimensions_map[ $map_key ] ) ) {
+				continue;
+			}
+
+			$cache_key = '|' . $url . '|';
+			if ( ! isset( $response_cache[ $cache_key ] ) ) {
+				$response_cache[ $cache_key ] = ModuleElementsUtils::get_responsive_image_attrs(
+					[
+						'src' => $url,
+						'url' => $url,
+						'id'  => 0,
+					]
+				);
+			}
+
+			$resolved_width  = self::_sanitize_image_dimension_value( $response_cache[ $cache_key ]['width'] ?? null );
+			$resolved_height = self::_sanitize_image_dimension_value( $response_cache[ $cache_key ]['height'] ?? null );
+
+			if ( '' !== $resolved_width && '' !== $resolved_height ) {
+				self::_add_image_dimensions_to_map( $dimensions_map, '', $url, $url, $resolved_width, $resolved_height );
+			}
+		}
+	}
+
+	/**
+	 * Collect image dimensions recursively from parsed blocks.
+	 *
+	 * @since ??
+	 *
+	 * @param array $blocks         Parsed block list.
+	 * @param array $dimensions_map Dimensions map accumulator.
+	 *
+	 * @return void
+	 */
+	private static function _collect_image_dimensions_from_blocks( array $blocks, array &$dimensions_map ): void {
+		foreach ( $blocks as $block ) {
+			$attrs = $block['attrs'] ?? null;
+			if ( is_array( $attrs ) ) {
+				self::_collect_image_dimensions_from_attrs( $attrs, $dimensions_map );
+			}
+
+			$inner_blocks = $block['innerBlocks'] ?? null;
+			if ( is_array( $inner_blocks ) && ! empty( $inner_blocks ) ) {
+				self::_collect_image_dimensions_from_blocks( $inner_blocks, $dimensions_map );
+			}
+		}
+	}
+
+	/**
+	 * Collect image dimensions recursively from attrs node.
+	 *
+	 * @since ??
+	 *
+	 * @param array $attrs          Attrs node.
+	 * @param array $dimensions_map Dimensions map accumulator.
+	 *
+	 * @return void
+	 */
+	private static function _collect_image_dimensions_from_attrs( array $attrs, array &$dimensions_map ): void {
+		foreach ( $attrs as $attr_value ) {
+			if ( ! is_array( $attr_value ) ) {
+				continue;
+			}
+
+			$inner_content = $attr_value['innerContent'] ?? null;
+			if ( is_array( $inner_content ) ) {
+				self::_collect_image_dimensions_from_inner_content( $inner_content, $dimensions_map );
+			}
+
+			self::_collect_image_dimensions_from_attrs( $attr_value, $dimensions_map );
+		}
+	}
+
+	/**
+	 * Collect image dimensions from an image innerContent payload.
+	 *
+	 * Uses the same population utility as frontend rendering to keep
+	 * width/height resolution behavior aligned with FE.
+	 *
+	 * @since ??
+	 *
+	 * @param array $inner_content  Inner content payload (breakpoint/state map).
+	 * @param array $dimensions_map Dimensions map accumulator.
+	 *
+	 * @return void
+	 */
+	private static function _collect_image_dimensions_from_inner_content( array $inner_content, array &$dimensions_map ): void {
+		$populated_inner_content = ModuleElementsUtils::populate_image_element_attrs( $inner_content );
+
+		foreach ( $populated_inner_content as $states ) {
+			if ( ! is_array( $states ) ) {
+				continue;
+			}
+
+			foreach ( $states as $state_value ) {
+				if ( ! is_array( $state_value ) ) {
+					continue;
+				}
+
+				$resolved_width  = self::_sanitize_image_dimension_value( $state_value['width'] ?? null );
+				$resolved_height = self::_sanitize_image_dimension_value( $state_value['height'] ?? null );
+
+				if ( '' === $resolved_width || '' === $resolved_height ) {
+					continue;
+				}
+
+				$id  = isset( $state_value['id'] ) ? strval( $state_value['id'] ) : '';
+				$src = is_string( $state_value['src'] ?? null ) ? $state_value['src'] : '';
+				$url = is_string( $state_value['url'] ?? null ) ? $state_value['url'] : '';
+
+				self::_add_image_dimensions_to_map( $dimensions_map, $id, $src, $url, $resolved_width, $resolved_height );
+			}
+		}
+	}
+
+	/**
+	 * Add image dimensions to map by id/src/url keys.
+	 *
+	 * @since ??
+	 *
+	 * @param array  $dimensions_map  Dimensions map accumulator.
+	 * @param string $id              Attachment ID value.
+	 * @param string $src             Source URL value.
+	 * @param string $url             Alternate source URL value.
+	 * @param string $resolved_width  Resolved width.
+	 * @param string $resolved_height Resolved height.
+	 *
+	 * @return void
+	 */
+	private static function _add_image_dimensions_to_map(
+		array &$dimensions_map,
+		string $id,
+		string $src,
+		string $url,
+		string $resolved_width,
+		string $resolved_height
+	): void {
+		if ( '' === $resolved_width || '' === $resolved_height ) {
+			return;
+		}
+
+		$normalized_id = strval( absint( $id ) );
+
+		if ( '0' !== $normalized_id ) {
+			$dimensions_map[ 'id:' . $normalized_id ] = [
+				'width'  => $resolved_width,
+				'height' => $resolved_height,
+			];
+		}
+
+		if ( '' !== $src ) {
+			$dimensions_map[ 'src:' . $src ] = [
+				'width'  => $resolved_width,
+				'height' => $resolved_height,
+			];
+		}
+
+		if ( '' !== $url ) {
+			$dimensions_map[ 'src:' . $url ] = [
+				'width'  => $resolved_width,
+				'height' => $resolved_height,
+			];
+		}
+	}
+
+	/**
+	 * Sanitize image dimension value to a positive integer string.
+	 *
+	 * @since ??
+	 *
+	 * @param mixed $value Candidate dimension value.
+	 *
+	 * @return string
+	 */
+	private static function _sanitize_image_dimension_value( $value ): string {
+		if ( ! is_scalar( $value ) || '' === strval( $value ) ) {
+			return '';
+		}
+
+		$normalized_value = absint( $value );
+
+		return 0 < $normalized_value ? strval( $normalized_value ) : '';
+	}
+
+	/**
+	 * Merge multiple image dimensions maps.
+	 *
+	 * Later maps override earlier maps for matching keys.
+	 *
+	 * @since ??
+	 *
+	 * @param array<int, array<string, array{width: string, height: string}>> $maps List of maps.
+	 *
+	 * @return array<string, array{width: string, height: string}>
+	 */
+	private static function _merge_image_dimensions_maps( array $maps ): array {
+		$merged = [];
+
+		foreach ( $maps as $map ) {
+			if ( ! is_array( $map ) || empty( $map ) ) {
+				continue;
+			}
+
+			$merged = array_merge( $merged, $map );
+		}
+
+		return $merged;
+	}
+
+	/**
+	 * Build a merged image dimensions map from serialized content segments.
+	 *
+	 * Empty and duplicate segments are skipped to avoid repeated parsing work.
+	 *
+	 * @since ??
+	 *
+	 * @param array<int, string> $contents Serialized content segments.
+	 *
+	 * @return array<string, array{width: string, height: string}>
+	 */
+	private static function _build_image_dimensions_map_for_contents( array $contents ): array {
+		$maps          = [];
+		$seen_hashes   = [];
+		$empty_hash_md = md5( '' );
+
+		foreach ( $contents as $content ) {
+			if ( ! is_string( $content ) ) {
+				continue;
+			}
+
+			$content_hash = md5( $content );
+			if ( $empty_hash_md === $content_hash || isset( $seen_hashes[ $content_hash ] ) ) {
+				continue;
+			}
+
+			$seen_hashes[ $content_hash ] = true;
+			$maps[]                       = self::_get_image_dimensions_map_for_content( $content );
+		}
+
+		return self::_merge_image_dimensions_maps( $maps );
 	}
 
 	/**
@@ -946,6 +1392,12 @@ class SettingsDataCallbacks {
 			$layout_content = Conversion::maybeConvertContent( $layout_content );
 		}
 
+		// Run the same Visual Builder raw-content migration filter used by `post()`.
+		// Without this call, Theme Builder template payloads bypass `et_fb_load_raw_post_content`,
+		// so D5 migrations (for example ImageGroupMigration) never execute for header/body/footer layout content.
+		// This preserves the same order as `post()`: optional shortcode conversion first, then D5 content migrations.
+		$layout_content = apply_filters( 'et_fb_load_raw_post_content', $layout_content, $layout_id );
+
 		// Wrap placeholder block if needed.
 		if ( ! empty( $layout_content ) && ! str_contains( $layout_content, '<!-- wp:divi/placeholder -->' ) ) {
 			$layout_content = ModuleUtils::wrap_placeholder_block( $layout_content );
@@ -967,6 +1419,23 @@ class SettingsDataCallbacks {
 	}
 
 	/**
+	 * Whether Theme Builder template hydration is allowed for the current user and post (matches `$can_use_theme_builder` in `theme_builder_templates()`).
+	 *
+	 * @since ??
+	 *
+	 * @return bool
+	 */
+	private static function can_use_theme_builder_for_templates(): bool {
+		global $post;
+
+		$post_id               = isset( $post->ID ) ? (int) $post->ID : 0;
+		$can_edit_posts        = current_user_can( 'edit_posts' );
+		$can_edit_current_post = 0 === $post_id || current_user_can( 'edit_post', $post_id );
+
+		return et_pb_is_allowed( 'theme_builder' ) && $can_edit_posts && $can_edit_current_post;
+	}
+
+	/**
 	 * Get `themeBuilderTemplates` setting data.
 	 *
 	 * Provides Theme Builder template content (header, footer, body) for the current post.
@@ -985,9 +1454,7 @@ class SettingsDataCallbacks {
 			$post_id                = isset( $post->ID ) ? (int) $post->ID : 0;
 			$is_tb_layout_post_type = et_theme_builder_is_layout_post_type( $post_type );
 			$is_divi_library_layout = 'et_pb_layout' === $post_type;
-			$can_edit_posts         = current_user_can( 'edit_posts' );
-			$can_edit_current_post  = 0 === $post_id || current_user_can( 'edit_post', $post_id );
-			$can_use_theme_builder  = et_pb_is_allowed( 'theme_builder' ) && $can_edit_posts && $can_edit_current_post;
+			$can_use_theme_builder  = self::can_use_theme_builder_for_templates();
 			// In Theme Builder layout editor, template areas must remain available even if the preference is disabled.
 			// In Divi Library, template areas must not be shown even if the preference is enabled.
 			$should_show_theme_builder_templates = ( $is_tb_layout_post_type || $show_theme_builder_templates ) && $can_use_theme_builder && ! $is_divi_library_layout;
@@ -1011,30 +1478,31 @@ class SettingsDataCallbacks {
 			];
 
 			$templates = [
-				'header'      => [
+				'header'             => [
 					'id'       => 0,
 					'title'    => '',
 					'content'  => '',
 					'isGlobal' => false,
 				],
-				'footer'      => [
+				'footer'             => [
 					'id'       => 0,
 					'title'    => '',
 					'content'  => '',
 					'isGlobal' => false,
 				],
-				'body'        => [
+				'body'               => [
 					'id'       => 0,
 					'title'    => '',
 					'content'  => '',
 					'isGlobal' => false,
 				],
-				'postContent' => [
+				'postContent'        => [
 					'id'       => 0,
 					'title'    => '',
 					'content'  => '',
 					'isGlobal' => false,
 				],
+				'imageDimensionsMap' => [],
 			];
 
 			// Short-circuit before Theme Builder template fetching when templates are hidden in the UI, or when
@@ -1050,6 +1518,15 @@ class SettingsDataCallbacks {
 						'isGlobal' => false,
 					];
 				}
+
+				$templates['imageDimensionsMap'] = self::_build_image_dimensions_map_for_contents(
+					[
+						$templates['header']['content'] ?? '',
+						$templates['body']['content'] ?? '',
+						$templates['footer']['content'] ?? '',
+						$templates['postContent']['content'] ?? '',
+					]
+				);
 
 				$return = $templates;
 				return $return;
@@ -1099,6 +1576,15 @@ class SettingsDataCallbacks {
 						'isGlobal' => false,
 					];
 				}
+
+				$templates['imageDimensionsMap'] = self::_build_image_dimensions_map_for_contents(
+					[
+						$templates['header']['content'] ?? '',
+						$templates['body']['content'] ?? '',
+						$templates['footer']['content'] ?? '',
+						$templates['postContent']['content'] ?? '',
+					]
+				);
 
 				$return = $templates;
 				return $return;
@@ -1203,6 +1689,15 @@ class SettingsDataCallbacks {
 					'isGlobal' => false,
 				];
 			}
+
+			$templates['imageDimensionsMap'] = self::_build_image_dimensions_map_for_contents(
+				[
+					$templates['header']['content'] ?? '',
+					$templates['body']['content'] ?? '',
+					$templates['footer']['content'] ?? '',
+					$templates['postContent']['content'] ?? '',
+				]
+			);
 
 			$return = $templates;
 		}
@@ -1615,17 +2110,18 @@ class SettingsDataCallbacks {
 			$has_valid_body_layout    = ! $has_tb_layouts || $is_tb_layout || $tb_body_has_post_content;
 
 			$return = [
-				'layout'             => Layout::get_layout_based_on_post_type( $post_type ),
+				'layout'                         => Layout::get_layout_based_on_post_type( $post_type ),
 
 				// phpcs:ignore ET.Comments.Todo.TodoFound -- Legacy TODO: May not be tracked in GitHub issues yet. Preserve for future tracking/removal.
 				// TODO feat(D5, Theme Builder) Maybe remove these parameters. Check whether these are used or not.
 				// At the moment these are straight copy from Divi 4 counterpart.
-				'isLayout'           => et_theme_builder_is_layout_post_type( $post_type ),
-				'layoutPostTypes'    => et_theme_builder_get_layout_post_types(),
-				'bodyLayoutPostType' => ET_THEME_BUILDER_BODY_LAYOUT_POST_TYPE,
-				'postContentModules' => et_theme_builder_get_post_content_modules(),
-				'hasValidBodyLayout' => $has_valid_body_layout,
-				'themeBuilderAreas'  => $theme_builder_layouts,
+				'isLayout'                       => et_theme_builder_is_layout_post_type( $post_type ),
+				'layoutPostTypes'                => et_theme_builder_get_layout_post_types(),
+				'bodyLayoutPostType'             => ET_THEME_BUILDER_BODY_LAYOUT_POST_TYPE,
+				'postContentModules'             => et_theme_builder_get_post_content_modules(),
+				'hasValidBodyLayout'             => $has_valid_body_layout,
+				'themeBuilderAreas'              => $theme_builder_layouts,
+				'canUseThemeBuilderForTemplates' => self::can_use_theme_builder_for_templates(),
 			];
 		}
 

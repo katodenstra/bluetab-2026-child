@@ -92,20 +92,7 @@
       }
     }
   },
-  "featuredImage": {
-    "decoration": {
-      "sizing": {
-        "desktop": {
-          "value": {
-            "alignment": "center",
-            "width": "100%",
-            "maxWidth": "none",
-            "height": "auto",
-            "maxHeight": "none"
-          }
-        }
-      }
-    },
+  "image": {
     "advanced": {
       "enabled": {
         "desktop": {
@@ -115,11 +102,6 @@
       "placement": {
         "desktop": {
           "value": "below"
-        }
-      },
-      "forceFullwidth": {
-        "desktop": {
-          "value": "on"
         }
       }
     }

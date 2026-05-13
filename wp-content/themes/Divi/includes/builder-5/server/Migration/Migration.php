@@ -34,8 +34,11 @@ use ET\Builder\Migration\DynamicContentPostIdMigration;
 use ET\Builder\Migration\EmptyArrayCorruptionMigration;
 use ET\Builder\Migration\ComposibleOptionsMigration;
 use ET\Builder\Migration\ComposibleOptionsPresetMigration;
+use ET\Builder\Migration\ImageGroupMigration;
+use ET\Builder\Migration\ImageGroupPresetMigration;
 use ET\Builder\Migration\FocusFieldsMigration;
 use ET\Builder\Migration\FocusFieldsPresetMigration;
+use ET\Builder\Migration\Utils\MigrationUtils;
 use ET\Builder\Framework\Utility\StringUtility;
 
 /**
@@ -363,6 +366,30 @@ class Migration {
 		foreach ( $content_migrations as $migration_class ) {
 			$migration_class::load();
 		}
+
+		// Finalize any deferred shared-pipeline migration once per hook execution.
+		// For frontend render filters, finalize before do_blocks() so output is rendered HTML, not raw blocks.
+		add_filter( 'divi_framework_portability_import_migrated_post_content', [ __CLASS__, 'finalize_shared_pipeline_content' ], PHP_INT_MAX );
+		add_filter( 'the_content', [ __CLASS__, 'finalize_shared_pipeline_content' ], 8 );
+		add_filter( 'et_builder_render_layout', [ __CLASS__, 'finalize_shared_pipeline_content' ], 8 );
+		add_filter( 'et_fb_load_raw_post_content', [ __CLASS__, 'finalize_shared_pipeline_content' ], PHP_INT_MAX, 2 );
+	}
+
+	/**
+	 * Finalize deferred shared-pipeline content migration.
+	 *
+	 * @since ??
+	 *
+	 * @param string $content Content to finalize.
+	 *
+	 * @return string
+	 */
+	public static function finalize_shared_pipeline_content( $content ): string {
+		if ( ! is_string( $content ) ) {
+			return '';
+		}
+
+		return MigrationUtils::finalize_shared_pipeline( $content );
 	}
 
 	/**
@@ -457,11 +484,16 @@ class Migration {
 	 */
 	public function migrate_content_block( string $content ): string {
 		$migrations = $this->_get_content_migrations();
+		MigrationUtils::begin_shared_pipeline( $content );
 
-		foreach ( $migrations as $migration_class ) {
-			if ( method_exists( $migration_class, 'migrate_content_block' ) ) {
-				$content = $migration_class::migrate_content_block( $content );
+		try {
+			foreach ( $migrations as $migration_class ) {
+				if ( method_exists( $migration_class, 'migrate_content_block' ) ) {
+					$content = $migration_class::migrate_content_block( $content );
+				}
 			}
+		} finally {
+			$content = MigrationUtils::finalize_shared_pipeline( $content );
 		}
 
 		return $content;
@@ -482,11 +514,16 @@ class Migration {
 	 */
 	public function migrate_content_both( string $content ): string {
 		$migrations = $this->_get_content_migrations();
+		MigrationUtils::begin_shared_pipeline( $content );
 
-		foreach ( $migrations as $migration_class ) {
-			if ( method_exists( $migration_class, 'migrate_content_both' ) ) {
-				$content = $migration_class::migrate_content_both( $content );
+		try {
+			foreach ( $migrations as $migration_class ) {
+				if ( method_exists( $migration_class, 'migrate_content_both' ) ) {
+					$content = $migration_class::migrate_content_both( $content );
+				}
 			}
+		} finally {
+			$content = MigrationUtils::finalize_shared_pipeline( $content );
 		}
 
 		return $content;
@@ -527,12 +564,14 @@ class Migration {
 		$migration->register_content_migration( new DynamicContentPostIdMigration() );
 		$migration->register_content_migration( new EmptyArrayCorruptionMigration() );
 		$migration->register_content_migration( new ComposibleOptionsMigration() );
+		$migration->register_content_migration( new ImageGroupMigration() );
 		$migration->register_content_migration( new FocusFieldsMigration() );
 
 		// Register preset migrations here.
 		$migration->register_presets_migration( new AttributePresetMigration() );
 		$migration->register_presets_migration( new NestedModulePresetMigration() );
 		$migration->register_presets_migration( new ComposibleOptionsPresetMigration() );
+		$migration->register_presets_migration( new ImageGroupPresetMigration() );
 		$migration->register_presets_migration( new FocusFieldsPresetMigration() );
 
 		return $migration;

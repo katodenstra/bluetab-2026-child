@@ -100,7 +100,6 @@ class FrontEnd {
 			add_action( 'et_head_meta', [ $this, 'maybe_init_divi_4_exensions' ] );
 			add_action( 'wp_enqueue_scripts', [ $this, 'register_fe_styles' ] );
 			add_action( 'wp_enqueue_scripts', [ $this, 'register_fe_scripts' ] );
-
 			// The priority needs to be 11 so that Dynamic Assets run first.
 			add_action( 'wp_footer', [ $this, 'enqueue_footer_script_data' ], 11 );
 			// D5: Enqueue fonts earlier (priority 9) so they are in the queue when et_builder_print_font runs (priority 10).
@@ -843,6 +842,7 @@ class FrontEnd {
 
 		return $content;
 	}
+
 }
 
 $dependency_tree = new DependencyTree();

@@ -24,10 +24,10 @@ use ET\Builder\Packages\Module\Layout\Components\ModuleElements\ModuleElements;
 use ET\Builder\Packages\Module\Layout\Components\MultiView\MultiViewUtils;
 use ET\Builder\Packages\Module\Layout\Components\MultiView\MultiViewScriptData;
 use ET\Builder\Packages\Module\Module;
-use ET\Builder\Packages\Module\Options\Animation\AnimationUtils;
 use ET\Builder\Packages\Module\Options\BoxShadow\BoxShadowClassnames;
 use ET\Builder\Packages\Module\Options\Css\CssStyle;
 use ET\Builder\Packages\Module\Options\Element\ElementClassnames;
+use ET\Builder\Packages\ModuleLibrary\Common\ImageWrapperAnimation;
 use ET\Builder\Packages\Module\Options\Text\TextClassnames;
 use ET\Builder\Packages\ModuleLibrary\Image\ImageModule;
 use ET\Builder\Packages\ModuleLibrary\ModuleRegistration;
@@ -690,25 +690,48 @@ class BlurbModule implements DependencyInterface {
 		$image_sizing_attr = $attrs['imageIcon']['decoration']['sizing'] ?? [];
 
 		$has_relative_image_width = false;
+		$image_sizing_height_attr = [];
 
-		foreach ( $image_sizing_attr as $breakpoint_values ) {
+		foreach ( $image_sizing_attr as $breakpoint => $breakpoint_values ) {
 			if ( ! is_array( $breakpoint_values ) ) {
 				continue;
 			}
 
-			foreach ( $breakpoint_values as $state_value ) {
+			foreach ( $breakpoint_values as $state => $state_value ) {
 				$width_value = is_array( $state_value ) ? ( $state_value['width'] ?? '' ) : '';
 
 				if ( is_string( $width_value ) && ! empty( $width_value ) && ! str_contains( $width_value, 'px' ) ) {
 					$has_relative_image_width = true;
-					break 2;
+				}
+
+				if ( ! is_array( $state_value ) ) {
+					continue;
+				}
+
+				$filtered_height_value = array_intersect_key(
+					$state_value,
+					array_flip(
+						[
+							'minHeight',
+							'height',
+							'maxHeight',
+							'aspectRatio',
+							'forceFullwidth',
+						]
+					)
+				);
+
+				if ( ! empty( $filtered_height_value ) ) {
+					$image_sizing_height_attr[ $breakpoint ][ $state ] = $filtered_height_value;
 				}
 			}
 		}
 
-		// Width should only render in image mode; icon font-size should only render in icon mode.
-		$render_icon_width_style_declaration  = $use_icon;
-		$render_image_width_style_declaration = ! $use_icon;
+		// Preset attrs omit use_icon, so icon font-size must still run on preset style passes.
+		$render_icon_width_style_declaration = ( 'module' !== $style_group ) || $use_icon;
+
+		// Same for image width on preset passes; module path still gates on image mode.
+		$render_image_width_style_declaration = ( 'module' !== $style_group ) || ! $use_icon;
 
 		// Create icon width style props if icon width styles should be rendered.
 		$render_icon_width_props = $render_icon_width_style_declaration ? [
@@ -729,6 +752,13 @@ class BlurbModule implements DependencyInterface {
 			'selector'            => $image_width_selector,
 			'attr'                => $attrs['imageIcon']['decoration']['sizing'] ?? [],
 			'declarationFunction' => [ self::class, 'image_width_style_declaration' ],
+		] : [];
+
+		// Route image height and aspect-ratio sizing styles to the img element.
+		$render_image_height_props = ( $render_image_width_style_declaration && ! empty( $image_sizing_height_attr ) ) ? [
+			'selector'      => "{$args['orderClass']} .et_pb_main_blurb_image .et_pb_image_wrap.et_pb_only_image_mode_wrap",
+			'imageSelector' => "{$args['orderClass']} .et_pb_main_blurb_image .et_pb_image_wrap img",
+			'attr'          => $image_sizing_height_attr,
 		] : [];
 
 		// Determine if icon sizing alignment styles should be rendered:
@@ -837,6 +867,10 @@ class BlurbModule implements DependencyInterface {
 											}
 
 											unset( $element_attrs['sizing'][ $breakpoint ][ $state ]['iconFontSize'] );
+											unset( $element_attrs['sizing'][ $breakpoint ][ $state ]['minHeight'] );
+											unset( $element_attrs['sizing'][ $breakpoint ][ $state ]['height'] );
+											unset( $element_attrs['sizing'][ $breakpoint ][ $state ]['maxHeight'] );
+											unset( $element_attrs['sizing'][ $breakpoint ][ $state ]['aspectRatio'] );
 
 											if ( $should_strip_sizing_width_for_default_sizing_style ) {
 												unset( $element_attrs['sizing'][ $breakpoint ][ $state ]['width'] );
@@ -880,6 +914,10 @@ class BlurbModule implements DependencyInterface {
 									[
 										'componentName' => 'divi/common',
 										'props'         => $render_image_width_props,
+									],
+									[
+										'componentName' => 'divi/image-sizing',
+										'props'         => $render_image_height_props,
 									],
 									[
 										'componentName' => 'divi/common',
@@ -1003,16 +1041,17 @@ class BlurbModule implements DependencyInterface {
 
 		$use_icon                        = $attrs['imageIcon']['innerContent']['desktop']['value']['useIcon'] ?? 'off';
 		$image_icon_layout_display_value = $attrs['imageIcon']['decoration']['layout']['desktop']['value']['display'] ?? 'block';
+		$image_icon_attr                 = $attrs['imageIcon'] ?? [];
+		$image_icon_render_attr          = ImageWrapperAnimation::render_attr_without_animation( $image_icon_attr );
 		$image_icon_layout_classnames    = [
 			'et_flex_module' => 'flex' === $image_icon_layout_display_value,
 			'et_grid_module' => 'grid' === $image_icon_layout_display_value,
 		];
 
 		// Icon.
-		$is_icon_enabled        = 'on' === $use_icon;
-		$icon_value             = Utils::process_font_icon( $attrs['imageIcon']['innerContent']['desktop']['value']['icon'] ?? [] );
-		$icon_animation_classes = AnimationUtils::classnames( $attrs['imageIcon']['decoration']['animation'] ?? [] );
-		$icon                   = isset( $icon_value ) ? HTMLUtility::render(
+		$is_icon_enabled = 'on' === $use_icon;
+		$icon_value      = Utils::process_font_icon( $attrs['imageIcon']['innerContent']['desktop']['value']['icon'] ?? [] );
+		$icon            = isset( $icon_value ) ? HTMLUtility::render(
 			[
 				'tag'               => 'span',
 				'attributes'        => [
@@ -1027,14 +1066,10 @@ class BlurbModule implements DependencyInterface {
 				'children'          => $elements->render(
 					[
 						'attrName'      => 'imageIcon',
+						'elementAttr'   => $image_icon_render_attr,
 						'tagName'       => 'span',
 						'attributes'    => [
-							'class' => HTMLUtility::classnames(
-								[
-									'et-pb-icon' => true,
-								],
-								$icon_animation_classes
-							),
+							'class' => 'et-pb-icon',
 						],
 						'applyWpautop'  => false,
 						'valueResolver' => function ( $value ) {
@@ -1072,6 +1107,7 @@ class BlurbModule implements DependencyInterface {
 					$elements->render(
 						[
 							'attrName'    => 'imageIcon',
+							'elementAttr' => $image_icon_render_attr,
 							'elementType' => 'image',
 						]
 					),
@@ -1101,7 +1137,10 @@ class BlurbModule implements DependencyInterface {
 			[
 				'tag'               => 'div',
 				'attributes'        => [
-					'class' => 'et_pb_main_blurb_image',
+					'class' => HTMLUtility::classnames(
+						'et_pb_main_blurb_image',
+						ImageWrapperAnimation::wrapper_animation_classname( $image_icon_attr )
+					),
 				],
 				'childrenSanitizer' => 'et_core_esc_previously',
 				'children'          => $image_icon_link,

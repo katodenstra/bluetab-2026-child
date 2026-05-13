@@ -21,6 +21,7 @@ use ET\Builder\Packages\Module\Layout\Components\ModuleElements\ModuleElements;
 use ET\Builder\Packages\Module\Options\Attributes\AttributeUtils;
 use ET\Builder\Packages\Module\Layout\Components\MultiView\MultiViewScriptData;
 use ET\Builder\Packages\Module\Layout\Components\MultiView\MultiViewUtils;
+use ET\Builder\Packages\Module\Layout\Components\StyleCommon\CommonStyle;
 use ET\Builder\Packages\Module\Module;
 use ET\Builder\Packages\Module\Options\BoxShadow\BoxShadowClassnames;
 use ET\Builder\Packages\Module\Options\Css\CssStyle;
@@ -120,56 +121,21 @@ class AudioModule implements DependencyInterface {
 			]
 		);
 
-		$image_link = $attrs['image']['innerContent']['desktop']['value']['src'] ?? '';
-
-		$title = $elements->render(
+		$title     = $elements->render(
 			[
 				'attrName' => 'title',
 			]
 		);
-
-		// Get custom attributes for the image element.
-		$custom_attributes_data  = $attrs['module']['decoration']['attributes'] ?? [];
-		$image_custom_attributes = [];
-		if ( ! empty( $custom_attributes_data ) ) {
-			$separated_attributes    = AttributeUtils::separate_attributes_by_target_element( $custom_attributes_data );
-			$image_custom_attributes = $separated_attributes['image'] ?? [];
-		}
-
-		// Merge image attributes properly, especially for class attribute collision.
-		$base_image_attributes = [
-			'class' => HTMLUtility::classnames(
-				[
-					'et_pb_audio_cover_art' => ! empty( $image_link ),
-				],
-				BoxShadowClassnames::has_overlay( $attrs['image']['decoration']['boxShadow'] ?? [] )
-			),
-			'style' => [
-				'background-image' => sprintf( 'url(%1$s)', esc_url( $image_link ) ),
-			],
-		];
-
-		$merged_image_attributes = $base_image_attributes;
-		foreach ( $image_custom_attributes as $attr_name => $attr_value ) {
-			if ( isset( $merged_image_attributes[ $attr_name ] ) ) {
-				// Attribute collision detected, merge values appropriately.
-				$merged_image_attributes[ $attr_name ] = AttributeUtils::merge_attribute_values( $attr_name, $merged_image_attributes[ $attr_name ], $attr_value );
-			} else {
-				// No collision, add normally.
-				$merged_image_attributes[ $attr_name ] = $attr_value;
-			}
-		}
-
-		$image_url = $has_image_url ? HTMLUtility::render(
+		$image_url = $has_image_url ? $elements->render(
 			[
-				'tag'               => 'div',
-				'attributes'        => $merged_image_attributes,
-				'children'          => $elements->style_components(
-					[
-						'attrName' => 'image',
-					]
-				),
-				'childrenSanitizer' => 'et_core_esc_previously',
+				'attrName'   => 'image',
+				'tagName'    => 'img',
+				'attributes' => [
+					'class' => HTMLUtility::classnames(
+						'et_pb_audio_cover_art',
+						BoxShadowClassnames::has_overlay( $attrs['image']['decoration']['boxShadow'] ?? [] )
+					),
+				],
 			]
 		) : '';
 
@@ -426,20 +392,23 @@ class AudioModule implements DependencyInterface {
 				'name'          => $name,
 				'storeInstance' => $store_instance,
 				'hoverSelector' => $selector,
-				'setStyle'      => [
+				'setAttrs'      => [
 					[
-						'selector'      => $selector . ' > div:nth-child(1)',
+						'selector'      => $selector . ' > .et_pb_audio_cover_art',
 						'data'          => [
-							'background-image' => $attrs['image']['innerContent'] ?? [],
+							'src'   => $attrs['image']['innerContent'] ?? [],
+							'alt'   => $attrs['image']['innerContent'] ?? [],
+							'title' => $attrs['image']['innerContent'] ?? [],
 						],
-						'valueResolver' => function ( $value ) {
-							return 'url(' . ( $value['src'] ?? '' ) . ')';
+						'valueResolver' => function ( $value, $resolver_args ) {
+							return $value[ $resolver_args['attrName'] ] ?? '';
 						},
+						'tag'           => 'img',
 					],
 				],
 				'setClassName'  => [
 					[
-						'selector'      => $selector . ' > div:nth-child(1)',
+						'selector'      => $selector . ' > .et_pb_audio_cover_art',
 						'data'          => [
 							'et_pb_audio_cover_art' => $attrs['image']['innerContent'] ?? [],
 						],
@@ -534,11 +503,36 @@ class AudioModule implements DependencyInterface {
 	 * ```
 	 */
 	public static function module_styles( array $args ): void {
-		$attrs    = $args['attrs'] ?? [];
-		$elements = $args['elements'];
-		$settings = $args['settings'] ?? [];
+		$attrs                     = $args['attrs'] ?? [];
+		$elements                  = $args['elements'];
+		$settings                  = $args['settings'] ?? [];
+		$order_class               = $args['orderClass'] ?? '';
+		$is_inside_sticky_module   = $elements->get_is_inside_sticky_module();
+		$sticky_parent_order_class = $elements->get_sticky_parent_order_class();
 
-		$default_printed_style_attrs = $args['defaultPrintedStyleAttrs'] ?? [];
+		$default_printed_style_attrs            = $args['defaultPrintedStyleAttrs'] ?? [];
+		$image_sizing_attr                      = $attrs['image']['decoration']['sizing'] ?? [];
+		$has_image_height                       = ModuleUtils::has_value(
+			$image_sizing_attr,
+			[
+				'subName' => 'height',
+			]
+		);
+		$has_image_aspect_ratio                 = ModuleUtils::has_value(
+			$image_sizing_attr,
+			[
+				'subName'       => 'aspectRatio',
+				'inheritedMode' => false,
+				'valueResolver' => function ( $value ): bool {
+					if ( ! is_array( $value ) ) {
+						return false;
+					}
+
+					return ! empty( $value['width'] ) || ! empty( $value['height'] );
+				},
+			]
+		);
+		$should_render_aspect_ratio_auto_height = $has_image_aspect_ratio && ! $has_image_height;
 
 		Style::add(
 			[
@@ -586,11 +580,23 @@ class AudioModule implements DependencyInterface {
 						[
 							'attrName'   => 'image',
 							'styleProps' => [
+								'fit'            => [
+									'selector' => "{$args['orderClass']} .et_pb_audio_cover_art",
+								],
+								'sizing'         => [
+									'propertySelectors' => [
+										'desktop' => [
+											'value' => [
+												'aspect-ratio' => "{$order_class} .et_pb_audio_cover_art",
+											],
+										],
+									],
+								],
 								'advancedStyles' => [
 									[
 										'componentName' => 'divi/common',
 										'props'         => [
-											'selector' => $args['orderClass'] . ' .et_pb_audio_cover_art',
+											'selector' => $order_class . ' .et_pb_audio_cover_art',
 											'attr'     => $attrs['image']['decoration']['border'] ?? [],
 											'declarationFunction' => [ Declarations::class, 'overflow_for_border_radius_style_declaration' ],
 										],
@@ -599,6 +605,17 @@ class AudioModule implements DependencyInterface {
 							],
 						]
 					),
+					$should_render_aspect_ratio_auto_height ? CommonStyle::style(
+						[
+							'selector'               => "{$order_class} .et_pb_audio_cover_art",
+							'attr'                   => $image_sizing_attr,
+							'important'              => true,
+							'declarationFunction'    => [ self::class, 'audio_cover_art_aspect_ratio_style_declaration' ],
+							'orderClass'             => $order_class,
+							'isInsideStickyModule'   => $is_inside_sticky_module,
+							'stickyParentOrderClass' => $sticky_parent_order_class,
+						]
+					) : null,
 
 					// Title.
 					$elements->style(
@@ -625,6 +642,36 @@ class AudioModule implements DependencyInterface {
 				],
 			]
 		);
+	}
+
+	/**
+	 * Audio cover art aspect-ratio companion CSS declarations.
+	 *
+	 * @since ??
+	 *
+	 * @param array $params {
+	 *     An array of parameters.
+	 *
+	 *     @type string $selector   Selector.
+	 *     @type array  $attr       Attribute.
+	 *     @type bool   $important  Important.
+	 *     @type string $returnType Return type.
+	 * }
+	 *
+	 * @return string
+	 */
+	public static function audio_cover_art_aspect_ratio_style_declaration( array $params ): string {
+		$attr_value   = $params['attrValue'] ?? [];
+		$aspect_ratio = is_array( $attr_value ) ? $attr_value['aspectRatio'] ?? null : null;
+
+		if ( ! is_array( $aspect_ratio ) || ( empty( $aspect_ratio['width'] ) && empty( $aspect_ratio['height'] ) ) ) {
+			return '';
+		}
+
+		$declarations = new StyleDeclarations( $params );
+		$declarations->add( 'height', 'auto' );
+
+		return $declarations->value();
 	}
 
 	/**

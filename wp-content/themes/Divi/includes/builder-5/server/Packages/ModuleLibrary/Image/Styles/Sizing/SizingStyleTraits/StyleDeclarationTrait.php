@@ -12,6 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	die( 'Direct access forbidden.' );
 }
 
+use ET\Builder\Framework\Breakpoint\Breakpoint;
 use ET\Builder\Packages\ModuleUtils\ModuleUtils;
 use ET\Builder\Packages\StyleLibrary\Utils\StyleDeclarations;
 
@@ -145,7 +146,7 @@ trait StyleDeclarationTrait {
 							'state'           => $state,
 							'mode'            => 'getAndInheritAll',
 							'defaultValue'    => null,
-							'breakpointNames' => \ET\Builder\Framework\Breakpoint\Breakpoint::get_default_breakpoint_names(),
+							'breakpointNames' => Breakpoint::get_default_breakpoint_names(),
 							'baseBreakpoint'  => 'desktop',
 						]
 					);
@@ -265,6 +266,7 @@ trait StyleDeclarationTrait {
 		$min_height      = $attr_value['minHeight'] ?? null;
 		$height          = $attr_value['height'] ?? null;
 		$max_height      = $attr_value['maxHeight'] ?? null;
+		$aspect_ratio    = $attr_value['aspectRatio'] ?? null;
 		$force_fullwidth = $attr_value['forceFullwidth'] ?? null;
 
 		$style_declarations = new StyleDeclarations(
@@ -294,6 +296,20 @@ trait StyleDeclarationTrait {
 			if ( 'on' !== $force_fullwidth && 'none' !== $max_height ) {
 				$style_declarations->add( 'width', 'auto' );
 			}
+		}
+
+		$aspect_ratio_width  = is_array( $aspect_ratio ) ? ( $aspect_ratio['width'] ?? null ) : null;
+		$aspect_ratio_height = is_array( $aspect_ratio ) ? ( $aspect_ratio['height'] ?? null ) : null;
+
+		if (
+			null !== $aspect_ratio_width &&
+			null !== $aspect_ratio_height &&
+			'' !== $aspect_ratio_width &&
+			'' !== $aspect_ratio_height &&
+			'auto' !== $aspect_ratio_width &&
+			'auto' !== $aspect_ratio_height
+		) {
+			$style_declarations->add( 'aspect-ratio', $aspect_ratio_width . ' / ' . $aspect_ratio_height );
 		}
 
 		return $style_declarations->value();

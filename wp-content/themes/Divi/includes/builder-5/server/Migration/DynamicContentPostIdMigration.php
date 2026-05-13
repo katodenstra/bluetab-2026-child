@@ -174,8 +174,7 @@ class DynamicContentPostIdMigration extends MigrationContentBase {
 
 			if ( $changes_made ) {
 				// Serialize the flat objects back into the content.
-				$blocks      = MigrationUtils::flat_objects_to_blocks( $flat_objects );
-				$new_content = MigrationUtils::serialize_blocks( $blocks );
+				$new_content = MigrationUtils::serialize_flat_objects( $flat_objects );
 			} else {
 				// Return original unwrapped content if no changes were made.
 				$new_content = $original_content;
@@ -237,7 +236,7 @@ class DynamicContentPostIdMigration extends MigrationContentBase {
 	 */
 	private static function _convert_slug_to_id_in_dynamic_content( string $value ): string {
 		// Check if value is a dynamic content string.
-		if ( false === strpos( $value, '$variable(' ) || '$' !== substr( $value, -1 ) ) {
+		if ( ! str_contains( $value, '$variable(' ) || '$' !== substr( $value, -1 ) ) {
 			return $value;
 		}
 
@@ -264,7 +263,7 @@ class DynamicContentPostIdMigration extends MigrationContentBase {
 		$name          = $dynamic_value['name'] ?? '';
 
 		// Only process post_link_url_* options.
-		if ( empty( $name ) || 0 !== strpos( $name, 'post_link_url_' ) ) {
+		if ( empty( $name ) || ! str_starts_with( $name, 'post_link_url_' ) ) {
 			return $value;
 		}
 

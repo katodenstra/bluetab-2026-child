@@ -1216,6 +1216,13 @@ class TextPresetAttrsMap {
 				'preset'   => [ 'style' ],
 				'subName'  => 'maxHeight',
 			],
+			'module.decoration.sizing__aspectRatio' => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [
+					'style',
+				],
+				'subName'  => 'aspectRatio',
+			],
 			'module.decoration.sizing__alignSelf'          => [
 				'attrName' => 'module.decoration.sizing',
 				'preset'   => [ 'style' ],

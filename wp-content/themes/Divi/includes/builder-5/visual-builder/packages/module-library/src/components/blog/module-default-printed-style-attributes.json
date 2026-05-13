@@ -42,5 +42,17 @@
         }
       }
     }
+  },
+  "image": {
+    "decoration": {
+      "fit": {
+        "desktop": {
+          "value": {
+            "objectFit": "fill",
+            "objectPosition": "center center"
+          }
+        }
+      }
+    }
   }
 }

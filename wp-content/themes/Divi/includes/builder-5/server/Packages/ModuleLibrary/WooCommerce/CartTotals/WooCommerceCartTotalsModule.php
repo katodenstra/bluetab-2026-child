@@ -25,6 +25,7 @@ use ET\Builder\Packages\Module\Layout\Components\MultiView\MultiViewUtils;
 use ET\Builder\Packages\Module\Module;
 use ET\Builder\Packages\Module\Options\Css\CssStyle;
 use ET\Builder\Packages\Module\Options\Element\ElementClassnames;
+use ET\Builder\Packages\Module\Options\Element\ElementStyle;
 use ET\Builder\Packages\Module\Options\Text\TextClassnames;
 use ET\Builder\Packages\Module\Options\FormField\FormFieldStyle;
 use ET\Builder\Packages\ModuleLibrary\ModuleRegistration;
@@ -1127,8 +1128,8 @@ class WooCommerceCartTotalsModule implements DependencyInterface {
 													'color' => implode(
 														', ',
 														[
-															"{$order_class} form .form-row input.input-text::placeholder",
-															"{$order_class} form .form-row textarea::placeholder",
+															"{$order_class} form .form-row input.input-text",
+															"{$order_class} form .form-row textarea",
 														]
 													),
 												],
@@ -1136,6 +1137,39 @@ class WooCommerceCartTotalsModule implements DependencyInterface {
 										],
 									],
 								],
+							],
+						]
+					),
+
+					// PHP FormFieldStyle does not fall back to field.advanced.placeholder.font.
+					// Keep this separate ElementStyle for parity with the Visual Builder fallback.
+					ElementStyle::style(
+						[
+							'selector'               => implode(
+								', ',
+								[
+									"{$order_class} form .form-row input.input-text",
+									"{$order_class} form .form-row textarea",
+								]
+							),
+							'attrs'                  => [
+								'font' => $attrs['field']['advanced']['placeholder']['font'] ?? [],
+							],
+							'orderClass'             => $order_class,
+							'isInsideStickyModule'   => $is_inside_sticky_module,
+							'stickyParentOrderClass' => $sticky_parent_order_class,
+							'font'                   => [
+								'selectorFunction' => function ( $params ) {
+									$maybe_multiple_selectors = $params['selector'] ?? '';
+									$base_selectors           = array_map( 'trim', explode( ',', $maybe_multiple_selectors ) );
+									$placeholder_selectors    = [];
+
+									foreach ( $base_selectors as $selector ) {
+										$placeholder_selectors[] = "{$selector}::placeholder";
+									}
+
+									return implode( ', ', $placeholder_selectors );
+								},
 							],
 						]
 					),

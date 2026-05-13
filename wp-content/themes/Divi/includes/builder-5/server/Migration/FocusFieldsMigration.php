@@ -341,9 +341,7 @@ class FocusFieldsMigration extends MigrationContentBase {
 				return $content;
 			}
 
-			$blocks = MigrationUtils::flat_objects_to_blocks( $flat_objects );
-
-			return MigrationUtils::serialize_blocks( $blocks );
+			return MigrationUtils::serialize_flat_objects( $flat_objects );
 		} catch ( \Throwable $exception ) {
 			throw new \RuntimeException( 'FocusFieldsMigration failed while migrating block content.', 0, $exception ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception chaining preserves root cause context; no output is rendered.
 		} finally {
@@ -384,10 +382,11 @@ class FocusFieldsMigration extends MigrationContentBase {
 	 * @param string $module_name      Current module name.
 	 * @param string $current_attr_key Current attr key.
 	 * @param array  $migration_flags  Module migration flags.
+	 * @param array  $options          Migration options.
 	 *
 	 * @return array Migrated attributes tree.
 	 */
-	private static function _migrate_attrs( array $attrs, string $module_name = '', string $current_attr_key = '', array $migration_flags = [] ): array {
+	private static function _migrate_attrs( array $attrs, string $module_name = '', string $current_attr_key = '', array $migration_flags = [], array $options = [] ): array {
 		if ( empty( $attrs ) ) {
 			return $attrs;
 		}
@@ -404,11 +403,13 @@ class FocusFieldsMigration extends MigrationContentBase {
 
 		foreach ( $migrated_attrs as $key => $value ) {
 			if ( is_array( $value ) ) {
-				$migrated_attrs[ $key ] = self::_migrate_attrs( $value, $module_name, (string) $key, $migration_flags );
+				$migrated_attrs[ $key ] = self::_migrate_attrs( $value, $module_name, (string) $key, $migration_flags, $options );
 			}
 		}
 
-		$migrated_attrs = self::_migrate_contact_form_border_and_shadow_attrs( $migrated_attrs, $module_name );
+		if ( empty( $options['skip_contact_form_border_and_shadow_migration'] ) ) {
+			$migrated_attrs = self::_migrate_contact_form_border_and_shadow_attrs( $migrated_attrs, $module_name );
+		}
 
 		if ( ! empty( $migration_flags['needs_contact_form_field_variant_copy'] ) ) {
 			$migrated_attrs = self::_migrate_contact_form_field_variant_attrs( $migrated_attrs, $module_name );
@@ -442,15 +443,16 @@ class FocusFieldsMigration extends MigrationContentBase {
 	 *
 	 * @param array  $attrs       Attributes tree.
 	 * @param string $module_name Current module name.
+	 * @param array  $options     Migration options.
 	 *
 	 * @return array Migrated attributes tree.
 	 */
-	public static function migrate_attrs_tree( array $attrs, string $module_name = '' ): array {
+	public static function migrate_attrs_tree( array $attrs, string $module_name = '', array $options = [] ): array {
 		if ( '' !== $module_name && ! self::should_migrate_module( $module_name ) ) {
 			return $attrs;
 		}
 
-		return self::_migrate_attrs( $attrs, $module_name );
+		return self::_migrate_attrs( $attrs, $module_name, '', [], $options );
 	}
 
 	/**

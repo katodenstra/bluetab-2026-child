@@ -18,6 +18,7 @@ use ET\Builder\Framework\Utility\Conditions;
 use ET\Builder\Packages\GlobalData\GlobalData;
 use ET\Builder\Packages\GlobalData\GlobalPreset;
 use ET\Builder\Packages\GlobalData\Utils\PresetContentUtils;
+use ET\Builder\Packages\Module\Layout\Components\ModuleElements\ModuleElementsUtils;
 use ET\Builder\Packages\Conversion\Utils\ConversionUtils;
 use ET\Builder\Packages\ModuleUtils\ModuleUtils;
 use ET\Builder\Packages\ModuleUtils\CanvasUtils;
@@ -52,6 +53,15 @@ class PortabilityPost {
 	 * @var array $_params Defaults to `[]`.
 	 */
 	private $_params = [];
+
+	/**
+	 * Cached current site host for portability URL checks.
+	 *
+	 * @since ??
+	 *
+	 * @var string|null
+	 */
+	private $_site_host = null;
 
 	/**
 	 * Whether or not an import is in progress.
@@ -1143,15 +1153,14 @@ class PortabilityPost {
 			// For example: "src":"https://url-goes-here/image.png"
 			// $matches[2] holds an array of all the image URLS matches this way.
 			if ( $maybe_gutenberg_format && preg_match_all( '/"(' . implode( '|', $images_src ) . ')":"(.*?)"/i', $value, $matches ) && $matches[2] ) {
-				// Validate that extracted values are actually image URLs or integers before adding them.
 				foreach ( array_unique( $matches[2] ) as $extracted_value ) {
 					// Skip empty values.
 					if ( empty( $extracted_value ) ) {
 						continue;
 					}
 
-					// Only add if it's a valid URL with an image/video extension, or an integer (image ID).
-					if ( wp_http_validate_url( $extracted_value ) && ImageUtils::is_image_or_video_url( $extracted_value ) ) {
+					// Only add if it's a transferable media URL, or a positive attachment ID.
+					if ( $this->is_transferable_media_url( $extracted_value ) ) {
 						$images[] = $extracted_value;
 					} elseif ( is_numeric( $extracted_value ) && (int) $extracted_value > 0 ) {
 						$images[] = (int) $extracted_value;
@@ -1216,24 +1225,86 @@ class PortabilityPost {
 				}
 			}
 
-			if ( preg_match( '/^.+?\.(jpg|jpeg|jpe|png|gif|svg|webp|mp4|webm|ogv|avi|mov|wmv|flv)/', $value, $match ) || $force ) {
-				$basename = basename( $value );
+			$is_positive_id = is_numeric( $value ) && (int) $value > 0;
 
-				// Skip if the value is not a valid URL or an image ID (integer).
-				if ( ! ( wp_http_validate_url( $value ) || ( is_numeric( $value ) && (int) $value > 0 ) ) ) {
+			if ( $force ) {
+				// Force mode accepts transferable URLs and positive IDs.
+				if ( ! ( $is_positive_id || ( is_string( $value ) && wp_http_validate_url( $value ) ) ) ) {
 					continue;
 				}
-
-				// Skip if the images array already contains the value to avoid duplicates.
-				if ( isset( $images[ $value ] ) ) {
-					continue;
-				}
-
-				$images[ $value ] = $value;
+			} elseif ( ! ( is_string( $value ) && $this->is_transferable_media_url( $value ) ) ) {
+				continue;
 			}
+
+			// Skip if the images array already contains the value to avoid duplicates.
+			if ( isset( $images[ $value ] ) ) {
+				continue;
+			}
+
+			$images[ $value ] = $value;
 		}
 
 		return $images;
+	}
+
+	/**
+	 * Determine if a URL is transferable by portability.
+	 *
+	 * Portability supports image/video URLs globally and JSON URLs only when hosted on
+	 * the current site (used for Lottie JSON assets).
+	 *
+	 * @since ??
+	 *
+	 * @param string $url URL to validate.
+	 *
+	 * @return bool
+	 */
+	private function is_transferable_media_url( string $url ): bool {
+		if ( ! wp_http_validate_url( $url ) ) {
+			return false;
+		}
+
+		if ( ImageUtils::is_media_url( $url ) ) {
+			return true;
+		}
+
+		return ImageUtils::is_file_extension( $url, 'json' ) && $this->is_same_site_url( $url );
+	}
+
+	/**
+	 * Check whether a URL host matches the current site host.
+	 *
+	 * @since ??
+	 *
+	 * @param string $url URL to compare.
+	 *
+	 * @return bool
+	 */
+	private function is_same_site_url( string $url ): bool {
+		$url_host  = wp_parse_url( $url, PHP_URL_HOST );
+		$site_host = $this->get_site_host();
+
+		if ( ! is_string( $url_host ) || ! is_string( $site_host ) ) {
+			return false;
+		}
+
+		return strtolower( $url_host ) === strtolower( $site_host );
+	}
+
+	/**
+	 * Get current site host, cached for repeated same-site checks.
+	 *
+	 * @since ??
+	 *
+	 * @return string|null
+	 */
+	private function get_site_host(): ?string {
+		if ( null === $this->_site_host ) {
+			$site_host = wp_parse_url( home_url( '/' ), PHP_URL_HOST );
+			$this->_site_host = is_string( $site_host ) ? $site_host : '';
+		}
+
+		return '' === $this->_site_host ? null : $this->_site_host;
 	}
 
 	/**
@@ -2158,8 +2229,8 @@ class PortabilityPost {
 			}
 		}
 
-		// Add filter to allow importing images.
-		add_filter( 'wp_check_filetype_and_ext', [ HooksRegistration::class, 'check_filetype_and_ext_image' ], 999, 3 );
+		// Add filter to allow importing portability media assets.
+		add_filter( 'wp_check_filetype_and_ext', [ HooksRegistration::class, 'check_filetype_and_ext_portability_media' ], 999, 3 );
 
 		// Upload images and replace current urls.
 		if ( isset( $import['images'] ) ) {
@@ -2298,6 +2369,9 @@ class PortabilityPost {
 					$preset_processing_result['preset_id_mappings']
 				);
 			}
+
+			// Populate width/height for imported image innerContent before builder consumes content.
+			$post_content = $this->_populate_imported_layout_image_dimensions( $post_content );
 
 			/**
 			 * Filters the post content after migration has been applied during portability import.
@@ -2444,8 +2518,8 @@ class PortabilityPost {
 			}
 		}
 
-		// Reset the `wp_check_filetype_and_ext` filter after uploading image files.
-		remove_filter( 'wp_check_filetype_and_ext', [ HooksRegistration::class, 'check_filetype_and_ext_image' ], 999, 3 );
+		// Reset the `wp_check_filetype_and_ext` filter after uploading portability media files.
+		remove_filter( 'wp_check_filetype_and_ext', [ HooksRegistration::class, 'check_filetype_and_ext_portability_media' ], 999, 3 );
 
 		// Set global colors response data (already imported before D4-to-D5 conversion).
 		if ( ! empty( $global_colors_imported ) ) {
@@ -2483,6 +2557,79 @@ class PortabilityPost {
 		}
 
 		return $success;
+	}
+
+	/**
+	 * Populate image dimensions in imported Divi block content.
+	 *
+	 * @since ??
+	 *
+	 * @param string $post_content Imported post content.
+	 *
+	 * @return string
+	 */
+	private function _populate_imported_layout_image_dimensions( string $post_content ): string {
+		if ( '' === $post_content || ! str_contains( $post_content, '<!-- wp:divi/' ) ) {
+			return $post_content;
+		}
+
+		$blocks = parse_blocks( $post_content );
+		if ( ! is_array( $blocks ) || empty( $blocks ) ) {
+			return $post_content;
+		}
+
+		$updated_blocks = $this->_populate_image_dimensions_in_blocks( $blocks );
+		$serialized     = serialize_blocks( $updated_blocks );
+
+		return '' !== $serialized ? $serialized : $post_content;
+	}
+
+	/**
+	 * Recursively populate image dimensions in parsed blocks.
+	 *
+	 * @since ??
+	 *
+	 * @param array $blocks Parsed blocks.
+	 *
+	 * @return array
+	 */
+	private function _populate_image_dimensions_in_blocks( array $blocks ): array {
+		foreach ( $blocks as $index => $block ) {
+			if ( isset( $block['attrs'] ) && is_array( $block['attrs'] ) ) {
+				$blocks[ $index ]['attrs'] = $this->_populate_image_dimensions_in_attrs( $block['attrs'] );
+			}
+
+			if ( isset( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
+				$blocks[ $index ]['innerBlocks'] = $this->_populate_image_dimensions_in_blocks( $block['innerBlocks'] );
+			}
+		}
+
+		return $blocks;
+	}
+
+	/**
+	 * Recursively populate image dimensions in attrs tree.
+	 *
+	 * @since ??
+	 *
+	 * @param array $attrs Attr tree.
+	 *
+	 * @return array
+	 */
+	private function _populate_image_dimensions_in_attrs( array $attrs ): array {
+		foreach ( $attrs as $attr_key => $attr_value ) {
+			if ( ! is_array( $attr_value ) ) {
+				continue;
+			}
+
+			if ( isset( $attr_value['innerContent'] ) && is_array( $attr_value['innerContent'] ) ) {
+				$attr_value['innerContent'] = ModuleElementsUtils::populate_image_element_attrs( $attr_value['innerContent'] );
+			}
+
+			$attrs[ $attr_key ] = $this->_populate_image_dimensions_in_attrs( $attr_value );
+		}
+
+		return $attrs;
 	}
 
 	/**

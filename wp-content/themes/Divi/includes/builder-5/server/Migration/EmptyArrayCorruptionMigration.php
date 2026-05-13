@@ -192,8 +192,7 @@ class EmptyArrayCorruptionMigration extends MigrationContentBase {
 
 			if ( $changes_made ) {
 				// Serialize the flat objects back into the content.
-				$blocks      = MigrationUtils::flat_objects_to_blocks( $flat_objects );
-				$new_content = MigrationUtils::serialize_blocks( $blocks );
+				$new_content = MigrationUtils::serialize_flat_objects( $flat_objects );
 			} else {
 				$new_content = $content;
 			}
@@ -234,7 +233,7 @@ class EmptyArrayCorruptionMigration extends MigrationContentBase {
 	private static function _content_needs_migration( string $content ): bool {
 		// Quick check: look for empty arrays in value keys.
 		// This is a fast pre-check before parsing the entire content.
-		return false !== strpos( $content, '"value":[]' );
+		return str_contains( $content, '"value":[]' );
 	}
 
 	/**

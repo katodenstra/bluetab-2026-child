@@ -84,6 +84,11 @@ class Sizing {
 		$min_height               = isset( $attr_value['minHeight'] ) ? $attr_value['minHeight'] : null;
 		$height                   = isset( $attr_value['height'] ) ? $attr_value['height'] : null;
 		$max_height               = isset( $attr_value['maxHeight'] ) ? $attr_value['maxHeight'] : null;
+		$aspect_ratio             = isset( $attr_value['aspectRatio'] ) && is_array( $attr_value['aspectRatio'] )
+			? $attr_value['aspectRatio']
+			: null;
+		$aspect_ratio_width       = $aspect_ratio['width'] ?? null;
+		$aspect_ratio_height      = $aspect_ratio['height'] ?? null;
 
 		// Flexbox sizing options.
 		$size        = isset( $attr_value['size'] ) ? $attr_value['size'] : null;
@@ -129,6 +134,7 @@ class Sizing {
 					'min-height'   => true,
 					'height'       => true,
 					'max-height'   => true,
+					'aspect-ratio' => true,
 				]
 			) : $grid_important_props );
 
@@ -222,6 +228,17 @@ class Sizing {
 		$default_max_height = $default_attr_value['maxHeight'] ?? null;
 		if ( null !== $max_height && ! ( $skip_defaults && $max_height === $default_max_height ) ) {
 			$style_declarations->add( 'max-height', $max_height );
+		}
+
+		if (
+			null !== $aspect_ratio_width &&
+			null !== $aspect_ratio_height &&
+			'' !== $aspect_ratio_width &&
+			'' !== $aspect_ratio_height &&
+			'auto' !== $aspect_ratio_width &&
+			'auto' !== $aspect_ratio_height
+		) {
+			$style_declarations->add( 'aspect-ratio', $aspect_ratio_width . ' / ' . $aspect_ratio_height );
 		}
 
 		// Grid-specific sizing properties.

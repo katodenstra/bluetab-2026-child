@@ -251,8 +251,7 @@ class ComposibleOptionsMigration extends MigrationContentBase {
 			}
 
 			if ( $changes_made ) {
-				$blocks = MigrationUtils::flat_objects_to_blocks( $flat_objects );
-				return MigrationUtils::serialize_blocks( $blocks );
+				return MigrationUtils::serialize_flat_objects( $flat_objects );
 			}
 
 			return $content;

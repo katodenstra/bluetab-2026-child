@@ -132,10 +132,7 @@ class FocusFieldsPresetMigration extends MigrationPresetsBase {
 					continue;
 				}
 
-				if (
-					! StringUtility::version_compare( $preset_version, self::$_release_version, '<' )
-					&& ! self::_preset_item_has_legacy_form_field_attrs( $preset_item, $effective_module_name )
-				) {
+				if ( ! StringUtility::version_compare( $preset_version, self::$_release_version, '<' ) ) {
 					continue;
 				}
 
@@ -163,10 +160,11 @@ class FocusFieldsPresetMigration extends MigrationPresetsBase {
 						continue;
 					}
 
-					if (
-						! StringUtility::version_compare( $preset_version, self::$_release_version, '<' )
-						&& ! self::_preset_item_has_legacy_form_field_attrs( $preset_item, $effective_module_name )
-					) {
+					// Group presets should only be migrated by version gate.
+					// Unlike module presets, a group preset can validly target
+					// module-level hosts (e.g. module.decoration.boxShadow) and
+					// must not be remapped by legacy-attrs detection on newer versions.
+					if ( ! StringUtility::version_compare( $preset_version, self::$_release_version, '<' ) ) {
 						continue;
 					}
 
@@ -200,48 +198,6 @@ class FocusFieldsPresetMigration extends MigrationPresetsBase {
 	}
 
 	/**
-	 * Check whether preset item contains legacy form-field attrs.
-	 *
-	 * @since ??
-	 *
-	 * @param array  $preset_item Preset item.
-	 * @param string $module_name Module name.
-	 *
-	 * @return bool True when legacy attrs are present.
-	 */
-	private static function _preset_item_has_legacy_form_field_attrs( array $preset_item, string $module_name ): bool {
-		if ( ! FocusFieldsMigration::should_migrate_module( $module_name ) ) {
-			return false;
-		}
-
-		if ( self::_preset_item_has_legacy_woocommerce_field_label_group_presets( $preset_item ) ) {
-			return true;
-		}
-
-		if ( self::_preset_item_has_legacy_woocommerce_field_labels_font_attrs( $preset_item ) ) {
-			return true;
-		}
-
-		if ( self::_preset_item_has_legacy_woocommerce_required_field_indicator_color_attrs( $preset_item ) ) {
-			return true;
-		}
-
-		foreach ( self::PRESET_ATTR_GROUPS as $attr_group ) {
-			$attrs = $preset_item[ $attr_group ] ?? null;
-
-			if ( ! is_array( $attrs ) || ! self::_preset_attr_group_might_contain_legacy_attrs( $attrs ) ) {
-				continue;
-			}
-
-			if ( FocusFieldsMigration::has_legacy_form_field_attrs_tree( $attrs, $module_name ) ) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
 	 * Migrate single preset item.
 	 *
 	 * @since ??
@@ -254,6 +210,8 @@ class FocusFieldsPresetMigration extends MigrationPresetsBase {
 	private static function _migrate_preset_item( array $preset_item, string $module_name ): array {
 		$migrated_preset       = $preset_item;
 		$effective_module_name = self::_resolve_preset_item_module_name( $preset_item, $module_name );
+		$preset_type           = $preset_item['type'] ?? '';
+		$is_group_preset       = is_string( $preset_type ) && 'group' === $preset_type;
 		if ( ! FocusFieldsMigration::should_migrate_module( $effective_module_name ) ) {
 			return $migrated_preset;
 		}
@@ -266,7 +224,13 @@ class FocusFieldsPresetMigration extends MigrationPresetsBase {
 				continue;
 			}
 
-			$migrated_preset[ $attr_group ] = self::_migrate_preset_attrs_tree( $preset_item[ $attr_group ], $effective_module_name );
+			$migrated_preset[ $attr_group ] = self::_migrate_preset_attrs_tree(
+				$preset_item[ $attr_group ],
+				$effective_module_name,
+				[
+					'skip_contact_form_border_and_shadow_migration' => $is_group_preset,
+				]
+			);
 		}
 
 		$migrated_preset = self::_migrate_woocommerce_field_label_group_presets( $migrated_preset, $effective_module_name );
@@ -360,105 +324,6 @@ class FocusFieldsPresetMigration extends MigrationPresetsBase {
 	}
 
 	/**
-	 * Check whether preset item contains legacy Woo nested field label group presets.
-	 *
-	 * @since ??
-	 *
-	 * @param array $preset_item Preset item.
-	 *
-	 * @return bool True when legacy nested group presets are present.
-	 */
-	private static function _preset_item_has_legacy_woocommerce_field_label_group_presets( array $preset_item ): bool {
-		$module_name = $preset_item['moduleName'] ?? '';
-
-		if ( ! is_string( $module_name ) || ! MigrationUtils::is_woocommerce_field_labels_legacy_module( $module_name ) ) {
-			return false;
-		}
-
-		$group_presets = $preset_item['groupPresets'] ?? null;
-
-		if ( ! is_array( $group_presets ) ) {
-			return false;
-		}
-
-		foreach ( self::_get_woocommerce_legacy_field_labels_group_preset_keys() as $legacy_key ) {
-			$legacy_group_preset = $group_presets[ $legacy_key ] ?? null;
-
-			if ( is_array( $legacy_group_preset ) ) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * Check whether preset item contains legacy Woo fieldLabels font attrs.
-	 *
-	 * @since ??
-	 *
-	 * @param array $preset_item Preset item.
-	 *
-	 * @return bool True when legacy fieldLabels font attrs are present.
-	 */
-	private static function _preset_item_has_legacy_woocommerce_field_labels_font_attrs( array $preset_item ): bool {
-		$module_name = $preset_item['moduleName'] ?? '';
-
-		if ( ! is_string( $module_name ) || ! MigrationUtils::is_woocommerce_field_labels_legacy_module( $module_name ) ) {
-			return false;
-		}
-
-		foreach ( self::PRESET_ATTR_GROUPS as $attr_group ) {
-			$attrs = $preset_item[ $attr_group ] ?? null;
-
-			if ( ! is_array( $attrs ) ) {
-				continue;
-			}
-
-			$field_labels_font_attrs = $attrs['fieldLabels']['decoration']['font'] ?? null;
-
-			if ( is_array( $field_labels_font_attrs ) ) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * Check whether preset item contains legacy Woo required indicator color attrs.
-	 *
-	 * @since ??
-	 *
-	 * @param array $preset_item Preset item.
-	 *
-	 * @return bool True when legacy required indicator color attrs are present.
-	 */
-	private static function _preset_item_has_legacy_woocommerce_required_field_indicator_color_attrs( array $preset_item ): bool {
-		$module_name = $preset_item['moduleName'] ?? '';
-
-		if ( ! is_string( $module_name ) || ! MigrationUtils::is_woocommerce_required_field_indicator_color_legacy_module( $module_name ) ) {
-			return false;
-		}
-
-		foreach ( self::PRESET_ATTR_GROUPS as $attr_group ) {
-			$attrs = $preset_item[ $attr_group ] ?? null;
-
-			if ( ! is_array( $attrs ) ) {
-				continue;
-			}
-
-			$legacy_attr = $attrs['fieldLabels']['advanced']['requiredFieldIndicatorColor'] ?? null;
-
-			if ( is_array( $legacy_attr ) ) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
 	 * Migrate preset attrs tree using the content migration logic.
 	 *
 	 * Keeps preset migration behavior in sync with FocusFieldsMigration for all
@@ -468,29 +333,12 @@ class FocusFieldsPresetMigration extends MigrationPresetsBase {
 	 *
 	 * @param array  $attrs       Attrs tree.
 	 * @param string $module_name Current module name.
+	 * @param array  $options     Migration options.
 	 *
 	 * @return array Migrated attrs tree.
 	 */
-	private static function _migrate_preset_attrs_tree( array $attrs, string $module_name ): array {
-		return FocusFieldsMigration::migrate_attrs_tree( $attrs, $module_name );
-	}
-
-	/**
-	 * Fast guard to skip deep legacy checks on unrelated attr groups.
-	 *
-	 * @since ??
-	 *
-	 * @param array $attrs Attr group value.
-	 *
-	 * @return bool True when attrs could contain legacy focus-field values.
-	 */
-	private static function _preset_attr_group_might_contain_legacy_attrs( array $attrs ): bool {
-		return isset( $attrs['advanced'] )
-			|| isset( $attrs['decoration'] )
-			|| isset( $attrs['field'] )
-			|| isset( $attrs['module'] )
-			|| isset( $attrs['fieldLabels'] )
-			|| isset( $attrs['groupPreset'] );
+	private static function _migrate_preset_attrs_tree( array $attrs, string $module_name, array $options = [] ): array {
+		return FocusFieldsMigration::migrate_attrs_tree( $attrs, $module_name, $options );
 	}
 
 	/**

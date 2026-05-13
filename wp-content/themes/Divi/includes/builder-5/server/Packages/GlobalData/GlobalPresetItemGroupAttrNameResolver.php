@@ -104,6 +104,22 @@ class GlobalPresetItemGroupAttrNameResolver {
 			);
 		}
 
+		// Handle mixed host-depth mapping.
+		// Example: target `imageIcon.decoration.border` should map to source
+		// `image.decoration.border` when preset data host is a root group id like `image`.
+		if (
+			strpos( $group_id, '.' )
+			&& ! strpos( $data_group_id, '.' )
+			&& self::is_attr_name_prefix_matched( $attr_name, $group_id )
+		) {
+			return new GlobalPresetItemGroupAttrNameResolved(
+				[
+					'attrName'    => self::replace_attr_name_prefix( $attr_name, $data_group_id ),
+					'attrSubName' => $attr_sub_name,
+				]
+			);
+		}
+
 		$memoize_params = [
 			'attrName'            => $attr_name,
 			'moduleName'          => $module_name,
@@ -630,15 +646,23 @@ class GlobalPresetItemGroupAttrNameResolver {
 		switch ( $group['groupType'] ?? null ) {
 			case 'group':
 				$fields                       = $group['component']['props']['fields'] ?? [];
+				$host_attr_name               = $group['component']['props']['attrName'] ?? null;
 				$attr_names_before_processing = count( $attr_names );
 				foreach ( $fields as $field ) {
 					if ( isset( $field['attrName'] ) ) {
 						$attr_names[] = self::_resolve_item( $field, $field['attrName'] );
 					}
 				}
-				// If no attributes were added from fields (or no fields exist), and the element name matches group_slug,
-				// include the group's own attribute (e.g., button.decoration.button, buttonTwo.decoration.button).
-				if ( count( $attr_names ) === $attr_names_before_processing && $attr_name_base === $group_slug ) {
+				// If no attributes were added from fields (or no fields exist), prefer explicit host attrName
+				// when it matches the requested group_slug (e.g., attrName: "image" for group_slug "image").
+				if (
+					count( $attr_names ) === $attr_names_before_processing
+					&& is_string( $host_attr_name )
+					&& $host_attr_name === $group_slug
+				) {
+					$attr_names[] = $host_attr_name;
+				} elseif ( count( $attr_names ) === $attr_names_before_processing && $attr_name_base === $group_slug ) {
+					// Fallback to decoration path for legacy groups that do not expose host attrName.
 					$attr_names[] = $attr_name_fallback;
 				}
 				break;

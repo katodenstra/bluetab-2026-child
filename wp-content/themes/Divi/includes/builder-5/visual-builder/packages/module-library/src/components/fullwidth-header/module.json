@@ -178,7 +178,7 @@
       },
       "styleProps": {
         "layout": {
-          "selector": "{{selector}} .header-content"
+          "selector": "{{selector}}, {{selector}} .header-content"
         }
       }
     },
@@ -189,6 +189,18 @@
       "supportsCustomAttributes": true,
       "styleProps": {
         "selector": "{{selector}} .header-logo, {{selector}} .header-image-container img",
+        "fit": {
+          "selector": "{{selector}} .header-logo, {{selector}} .header-image-container img"
+        },
+        "sizing": {
+          "propertySelectors": {
+            "desktop": {
+              "value": {
+                "aspect-ratio": "{{selector}} .header-logo, {{selector}} .header-image-container img"
+              }
+            }
+          }
+        },
         "border": {
           "selector": "{{selector}}.et_pb_fullwidth_header .header-logo, {{selector}}.et_pb_fullwidth_header .header-image-container img"
         },
@@ -233,56 +245,7 @@
             }
           }
         },
-        "decoration": {
-          "border": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "attrName": "image.decoration.border",
-              "priority": 20,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/border",
-                "props": {
-                  "grouped": true
-                }
-              }
-            }
-          },
-          "boxShadow": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "attrName": "image.decoration.boxShadow",
-              "priority": 30,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/box-shadow",
-                "props": {
-                  "grouped": true
-                }
-              }
-            }
-          },
-          "filters": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "attrName": "image.decoration.filters",
-              "priority": 30,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/filters",
-                "props": {
-                  "grouped": true
-                }
-              }
-            }
-          }
-        },
+        "decoration": {},
         "advanced": {
           "orientation": {
             "groupType": "group-item",
@@ -292,7 +255,7 @@
               "label": "Image Alignment",
               "description": "This controls the orientation of the image within the module.",
               "category": "layout",
-              "priority": 10,
+              "priority": 1,
               "render": true,
               "multipleChoices": false,
               "features": {
@@ -1090,11 +1053,14 @@
         "multiElements": true,
         "groupName": "image",
         "component": {
-          "name": "divi/composite",
+          "name": "divi/image",
           "props": {
+            "attrName": "image",
             "clipboardCategory": "style",
             "groupLabel": "Image",
-            "dynamicSubgroupHost": true
+            "grouped": true,
+            "dynamicSubgroupHost": true,
+            "presetGroup": "divi/image"
           }
         }
       },

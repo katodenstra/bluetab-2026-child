@@ -84,6 +84,7 @@ use ET\Builder\Packages\ModuleLibrary\Slide\SlideModule;
 use ET\Builder\Packages\ModuleLibrary\Slider\SliderModule;
 use ET\Builder\Packages\ModuleLibrary\SocialMediaFollowItem\SocialMediaFollowItemModule;
 use ET\Builder\Packages\ModuleLibrary\SocialMediaFollow\SocialMediaFollowModule;
+use ET\Builder\Packages\ModuleLibrary\Svg\SvgModule;
 use ET\Builder\Packages\ModuleLibrary\Tab\TabModule;
 use ET\Builder\Packages\ModuleLibrary\Tabs\TabsModule;
 use ET\Builder\Packages\ModuleLibrary\TeamMember\TeamMemberModule;
@@ -504,6 +505,7 @@ if ( ConditionsUtility::should_register_all_d5_modules() ) {
 	$dependency_tree->add_dependency( new SliderModule() );
 	$dependency_tree->add_dependency( new SocialMediaFollowItemModule() );
 	$dependency_tree->add_dependency( new SocialMediaFollowModule() );
+	$dependency_tree->add_dependency( new SvgModule() );
 	$dependency_tree->add_dependency( new TabModule() );
 	$dependency_tree->add_dependency( new TabsModule() );
 	$dependency_tree->add_dependency( new TeamMemberModule() );

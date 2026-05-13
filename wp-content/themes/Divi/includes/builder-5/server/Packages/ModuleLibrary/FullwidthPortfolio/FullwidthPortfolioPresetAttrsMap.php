@@ -8,6 +8,9 @@
 
 namespace ET\Builder\Packages\ModuleLibrary\FullwidthPortfolio;
 
+use ET\Builder\Packages\Module\Options\Fit\FitPresetAttrsMap;
+use ET\Builder\Packages\Module\Options\Sizing\SizingPresetAttrsMap;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	die( 'Direct access forbidden.' );
 }
@@ -36,7 +39,7 @@ class FullwidthPortfolioPresetAttrsMap {
 			return $map;
 		}
 
-		return [
+		$map = [
 			'title.innerContent'                           => [
 				'attrName' => 'title.innerContent',
 				'preset'   => 'content',
@@ -844,6 +847,13 @@ class FullwidthPortfolioPresetAttrsMap {
 				'preset'   => [ 'style' ],
 				'subName'  => 'maxHeight',
 			],
+			'module.decoration.sizing__aspectRatio'        => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [
+					'style',
+				],
+				'subName'  => 'aspectRatio',
+			],
 			'module.decoration.sizing__alignSelf'          => [
 				'attrName' => 'module.decoration.sizing',
 				'preset'   => [ 'style' ],
@@ -1572,5 +1582,11 @@ class FullwidthPortfolioPresetAttrsMap {
 				'preset'   => [ 'html' ],
 			],
 		];
+
+		return array_merge(
+			$map,
+			SizingPresetAttrsMap::get_map( 'image.decoration.sizing' ),
+			FitPresetAttrsMap::get_map( 'image.decoration.fit' )
+		);
 	}
 }

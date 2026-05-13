@@ -1,3 +1,83 @@
+version 5.5.1 ( updated 05-11-2026 )
+- Fixed section and row options/settings bars could disappear after deleting the previous element.
+- Restored WooCommerce Product Purchase, Cart Contents, and Product Stock display conditions in Divi 5 when WooCommerce is active, including frontend evaluation compatibility with Divi 4 layouts.
+- Fixed inline rich-text editing in the Visual Builder when a third-party Divi 5 module plugin is active by ensuring the canonical TinyMCE script loads before the module bundle.
+- Added a stop button to the AI Agent chat that allows users to cancel an in-progress response during streaming, planning, or tool execution.
+- Fixed an issue where nested right-click submenus in Theme Builder could appear behind overlays and become inaccessible on lower module menus.
+- Fixed Hero and other fullwidth modules not appearing in the Visual Builder when inserting from the Divi Library.
+- Fixed a Contact Form issue where the basic captcha input could clip entered numbers when the field text size was increased.
+- Added browser-side AI agent checkpoint persistence via a store-backed custom saver, including adapter wiring, thread-scoped checkpoint queries, and automated verification coverage.
+- Background Image horizontal and vertical offset fields no longer list center, top, bottom, left, or right in their unit picker. Use Background Image Position when you want those presets, so offsets stay length-based and you avoid incompatible combinations between the two controls.
+- Fixed disabled modules disappearing from the Visual Builder wireframe when “show disabled modules at 50% opacity” was turned off.
+- Fixed Fullwidth Header default content width in Divi 5 so modules without an explicit width now honor the intended 100% default instead of falling back to the legacy 800px max-width.
+- Fixed mixed-language Theme Builder assignment option labels when Disable Translations is enabled.
+- Fixed Blog module pagination showing an extra page when Post Offset and pagination were used together, including matching page totals in the Visual Builder.
+- Fixed Dynamic Module Custom CSS not applying in the Visual Builder or on the front end by wiring cssFields, customCssFields metadata, and PHP CssStyle output to match the Static Module pattern.
+- Fixed group preset attributes not resolving correctly when editing a composite group, such as the image module's sizing group, which resulted in unsaved changes when editing aspect ratio attributes.
+- Fixed changes not showing up in the interface when editing the font group preset on a text module, due to the text module's nested text group, which was mistakenly used as the actively editing preset ID.
+
+version 5.5.0 ( updated 05-08-2026 )
+- Fixed slider-family module conversion fixtures so generated module-library attrs data stays in sync with conversion expectations.
+- Fixed Contact Form Contact Button custom CSS hover styles so they trigger only on button hover instead of form container hover.
+- Fixed the Divi Library "Layout Type" dropdown alignment in the Add New Layout modal for WordPress 7.0 compatibility.
+- Fixed an issue where deleted global colors were not restored when re-importing variables from the same export file.
+- Saturation filters now clamp at grayscale when set to minimum.
+- Fixed the Visual Builder left toolbar so all actions stay reachable on short desktop viewports.
+- Fixed Theme Customizer preview so global Row Height only affects block layout rows, matching the front end and Divi 5 flex/grid layouts.
+- Fixed Contact Form submit button sizing so Design → Button → Sizing width and alignment behave correctly in the bottom row, including beside the optional math captcha.
+- Fixed release CI so type checking is gated and executed for relevant JS/TS changes.
+- Fixed an issue where the Show Theme Builder Layouts option appeared in Builder Settings for users who were not allowed to load Theme Builder layouts, so the setting had no effect.
+- Fixed Menu and Fullwidth Menu WooCommerce cart quantity responding to responsive Show Cart Quantity on the front end so it matches the Visual Builder.
+- Fixed layout import progress bar fluctuating during multi-file imports by ensuring progress only moves forward.
+- Theme Customizer Heading Text Color now applies its default #666666 value to Builder 5 front-end headings.
+- Fixed pasted inline title text duplicating after blur.
+- Fixed builder-enabled CPT single frontend parity by removing legacy container/sidebar/meta-wrapper output.
+- Fixed a PHP 8 fatal error in Divi when certain plugins left the template global in an unexpected shape during admin post list screens.
+- Improved AI post management tools by reusing existing page tools with a postType option, including support for custom post types.
+- Fixed an issue where AI Agent chat history was lost when dragging the chatbot panel between docked and floating positions.
+- Added and hardened the SVG module workflow so editors can render and style sanitized inline SVG from code or uploaded source with consistent VB/FE behavior.
+- Fixed Constant Contact email provider authentication by migrating to API v3 with OAuth 2.0 support. Added automatic token refresh to prevent authentication failures when tokens expire. Fixed critical bug preventing JSON response decoding for email providers and spam protection. Improved error message display for subscription failures. Added error handling for OAuth authentication failures in Divi 5. Enabled management of email accounts with no lists.
+- Fixed Person module after D4 to D5 migration so image and text stay side-by-side and the image column no longer forced full width in flex layout.
+- Fixed the wrong color being set as the default heading color in the Theme Customizer.
+- Fixed example extension webpack watch mode repeatedly recompiling because conversion-outline.json was rewritten on every build even when its content did not change.
+- Fixed D4 to D5 conversion so free-form custom CSS on the example D4 module migrates into Divi 5 like core modules.
+- Fixed Icon List Item text so spaces around inline HTML tags display correctly on the front end, and allowed HTML in the list item text element metadata for consistent Visual Builder handling.
+- Fixed an issue where product dynamic content options could be missing in the Visual Builder due to incorrect post context during after-app-load settings data resolution.
+- Fixed a Divi 5 portability issue where imported Lottie modules could keep source-site JSON URLs; same-site JSON assets are now transferred and rewritten during import.
+- Fixed Column “Apply Structure Template” so Flex structure templates appear when the column uses Flex layout, not only Grid templates.
+- Fixed a VB and front-end color mismatch for heading, body, and link text colors by emitting CSS global variable rules in the customizer CSS output for Divi 5.
+- Added task documentation for the Divi 5 global text color parity fix tracked under issue #49186.
+- Woo Checkout Billing and Shipping Select2-backed fields now apply Fields hover text color consistently with standard checkout fields.
+- Fixed module links with multiple query parameters so URLs with & no longer broke redirects on the frontend.
+- Fixed a CSS numeric typing regression that caused TypeScript check failures when parsed numeric values reached string-only consumers.
+- Added new aspect-ratio settings to the sizing group for all modules.
+- Added new framing settings to all modules with images, including object fit and position.
+- Implemented image group presets and updated all modules with images to support the new preset type.
+- Harmonized the settings available in the image group for all modules.
+- Enabled composible settings for image option groups.
+- Fixed image animations not working for the post carousel module when enabled via composable settings.
+
+version 5.4.1 ( updated 05-05-2026 )
+- Added AI Agent canvas tools in Divi 5 so the assistant can discover, create, switch, configure, and manage canvases through natural-language workflows.
+- Added AI Agent tools for creating, updating, trashing, and searching pages, plus tools to publish, unpublish, or schedule page status—enabling page lifecycle operations outside the Visual Builder.
+- Fixed an issue where Contact Form Basic Captcha errors could show a message without the expected red error border on the captcha input.
+- Fixed duplicate module groups appearing in the interaction target selector when using Theme Builder layouts.
+- Fixed global instances in Wireframe default view so nested modules under a global layout render in the wireframe tree on first load instead of only a single Global Layout row.
+- Fixed global layouts not expanding in Wireframe view on first Visual Builder load when Wireframe was the default view mode.
+- Fixed Visual Builder failing to load when divi/global-layout blocks contained pathologically nested localAttrs from repeated save/port round-trips (#46915).
+- Fixed Image module borders so rounded corners no longer show gaps on small images.
+- Fixed Sendinblue (Brevo) Email Optin custom field values not saving when the field name’s casing differed from the value sent from the form.
+- Fixed duplicate frontend CSS rules when Theme Builder layouts were used, so unified static CSS no longer repeated the same module styles for the main content.
+- Fixed inconsistent Theme Builder control heights on WordPress 7 by no longer loading core forms.css on the Theme Builder admin screen.
+- Fixed Portfolio module in the Visual Builder so grid row classes (first_in_row, last_in_row, and on_last_row) match the frontend, including when the module is the last content module in a column. Also fixed CI performance test failures by using requestIdleCallback to defer grid calculations until the browser is idle.
+- Fixed a Slider true parallax transition issue where background images could jump or render inconsistently during slide changes.
+- Woo Checkout Billing and Shipping select-backed fields now respect configured default, focused, and open Fields text colors in Visual Builder and frontend rendering.
+- Fixed an issue where background images set via image global variables in presets did not render on the Front End.
+- Fixed border inheritance so side-specific border styles defined are no longer overridden by newly set all border widths.
+- Fixed the Website Gutter Width Theme Customizer setting not auto-applying to existing pages.
+- Fixed the Blurb module’s preset Icon Font Size not applying to the icon in the Visual Builder.
+- Fixed an issue where module settings panel height could change unexpectedly after switching between modules and reopening the same module settings.
+
 version 5.4.0 ( updated 04-30-2026 )
 - Added missing AI Agent module and context tools in Divi 5 Visual Builder, including preset stack operations, module attribute removal, layout reset, and hierarchy/lock/global state inspection support.
 - Added clone, lock, and unlock module tools to the Divi 5 AI-agent module toolset with integration test coverage.

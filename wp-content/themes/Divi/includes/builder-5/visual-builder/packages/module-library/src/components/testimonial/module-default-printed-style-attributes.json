@@ -89,6 +89,13 @@
   },
   "portrait": {
     "decoration": {
+      "fit": {
+        "desktop": {
+          "value": {
+            "objectFit": "cover"
+          }
+        }
+      },
       "border": {
         "desktop": {
           "value": {

@@ -58,8 +58,8 @@ class PostTitleModule implements DependencyInterface {
 	 * @return array The filtered decoration attributes.
 	 */
 	public static function filter_module_decoration_attrs( array $decoration_attrs, array $attrs, string $featured_image_url ): array {
-		// Attribute `featuredImage.advanced.placement` is desktop only.
-		$placement = $attrs['featuredImage']['advanced']['placement']['desktop']['value'] ?? null;
+		// Attribute `image.advanced.placement` is desktop only.
+		$placement = $attrs['image']['advanced']['placement']['desktop']['value'] ?? null;
 
 		// Checking if the value of the `placement` variable is not equal to `background`. If it
 		// is not equal, it means that the featured image is not set to be displayed as a background, so the
@@ -68,7 +68,7 @@ class PostTitleModule implements DependencyInterface {
 			return $decoration_attrs;
 		}
 
-		$enabled_attr     = $attrs['featuredImage']['advanced']['enabled'] ?? [];
+		$enabled_attr     = $attrs['image']['advanced']['enabled'] ?? [];
 		$background_attrs = $decoration_attrs['background'] ?? [];
 
 		// Iterate through each `attrState` for every `attrBreakpoint` in the `enabledAttr` object.
@@ -113,7 +113,7 @@ class PostTitleModule implements DependencyInterface {
 	}
 
 	/**
-	 * Filters the featuredImage.decoration attributes.
+	 * Filters the image.decoration attributes.
 	 *
 	 * This function is equivalent of JS function filterFeaturedImageDecorationAttrs located in
 	 * visual-builder/packages/module-library/src/components/post-title/attrs-filter/filter-featured-image-decoration-attrs/index.ts.
@@ -126,16 +126,14 @@ class PostTitleModule implements DependencyInterface {
 	 * @return array The filtered decoration attributes.
 	 */
 	public static function filter_featured_image_decoration_attrs( array $decoration_attrs, array $attrs ): array {
-		// Checking if the `decorationAttrs` array has a key called 'sizing'. If it does
-		// not have this key, it means that the decoration attributes of the featured image do not
-		// include any sizing information. In this case, the function simply returns the `decorationAttrs`
-		// array as is, without making any changes.
-		if ( ! array_key_exists( 'sizing', $decoration_attrs ) ) {
+		$image_sizing_attrs = $attrs['image']['decoration']['sizing'] ?? null;
+
+		if ( ! is_array( $image_sizing_attrs ) ) {
 			return $decoration_attrs;
 		}
 
-		// Attribute `featuredImage.advanced.placement` is desktop only.
-		$placement = $attrs['featuredImage']['advanced']['placement']['desktop']['value'] ?? null;
+		// Attribute `image.advanced.placement` is desktop only.
+		$placement = $attrs['image']['advanced']['placement']['desktop']['value'] ?? null;
 
 		// Checking if the value of the `placement` variable is equal to the string `background`.
 		// If it is, it means that the featured image is set to be displayed as a background
@@ -151,19 +149,17 @@ class PostTitleModule implements DependencyInterface {
 			);
 		}
 
-		// Creating a new array called sizingAttrs and copying the values of the `decorationAttrs.sizing` array into it.
-		$sizing_attrs = $decoration_attrs['sizing'] ?? [];
+		// Read sizing attrs from migrated `image.decoration.sizing` only.
+		$sizing_attrs = $image_sizing_attrs;
 
 		// Iterate through each `attrState` for every `attrBreakpoint` in the `sizingAttrs` array.
 		// It checks if the featured image is active for that combination. If not, it deletes its sizing attributes.
-		// If it is, and `forceFullwidth` is turned on, it removes `width`, `maxWidth`, and `alignment` attributes
-		// for that combination.
 		foreach ( $sizing_attrs as $attr_breakpoint => $attr_state ) {
 			foreach ( $attr_state as $key => $value ) {
-				// Value of the `featuredImage.advanced.enabled` property for current `attrBreakpoint` and `attrState`.
+				// Value of the `image.advanced.enabled` property for current `attrBreakpoint` and `attrState`.
 				$enabled = ModuleUtils::use_attr_value(
 					[
-						'attr'       => $attrs['featuredImage']['advanced']['enabled'] ?? [],
+						'attr'       => $attrs['image']['advanced']['enabled'] ?? [],
 						'state'      => $key,
 						'breakpoint' => $attr_breakpoint,
 					]
@@ -175,22 +171,6 @@ class PostTitleModule implements DependencyInterface {
 				// empty array, effectively removing any sizing attributes for that combination.
 				if ( 'on' !== $enabled ) {
 						$sizing_attrs[ $attr_breakpoint ][ $key ] = [];
-						continue;
-				}
-
-				// Attribute `featuredImage.advanced.forceFullwidth` is desktop only.
-				$force_fullwidth = $attrs['featuredImage']['advanced']['forceFullwidth']['desktop']['value'] ?? null;
-
-				// Checking if the value of the `forceFullwidth` variable is equal to the string `on`.
-				// If it is, it means that the `forceFullwidth` option is turned on for the featured image. In
-				// this case, the code block sets the `width`, `maxWidth`, and `alignment` attributes of the
-				// `$sizingAttrs[$attrBreakpoint][$key]` array to `null`. This effectively removes any width,
-				// maxWidth, and alignment attributes for that particular combination of `attrBreakpoint` and
-				// `attrState`.
-				if ( 'on' === $force_fullwidth ) {
-					$sizing_attrs[ $attr_breakpoint ][ $key ]['width']     = null;
-					$sizing_attrs[ $attr_breakpoint ][ $key ]['maxWidth']  = null;
-					$sizing_attrs[ $attr_breakpoint ][ $key ]['alignment'] = null;
 				}
 			}
 		}
@@ -272,10 +252,10 @@ class PostTitleModule implements DependencyInterface {
 		$classnames_instance = $args['classnamesInstance'];
 		$attrs               = $args['attrs'];
 
-		$featured_image_placement = $attrs['featuredImage']['advanced']['placement']['desktop']['value'] ?? 'below';
+		$featured_image_placement = $attrs['image']['advanced']['placement']['desktop']['value'] ?? 'below';
 
 		if ( 'background' === $featured_image_placement ) {
-			$featured_image_enabled = $attrs['featuredImage']['advanced']['enabled']['desktop']['value'] ?? 'on';
+			$featured_image_enabled = $attrs['image']['advanced']['enabled']['desktop']['value'] ?? 'on';
 
 			if ( 'on' === $featured_image_enabled ) {
 				$classnames_instance->add( 'et_pb_featured_bg' );
@@ -350,7 +330,7 @@ class PostTitleModule implements DependencyInterface {
 			]
 		);
 
-		$placement = $attrs['featuredImage']['advanced']['placement']['desktop']['value'] ?? 'below';
+		$placement = $attrs['image']['advanced']['placement']['desktop']['value'] ?? 'below';
 
 		MultiViewScriptData::set(
 			[
@@ -361,7 +341,7 @@ class PostTitleModule implements DependencyInterface {
 					[
 						'selector'      => $selector,
 						'data'          => [
-							'et_pb_featured_bg' => $attrs['featuredImage']['advanced']['enabled'] ?? [],
+							'et_pb_featured_bg' => $attrs['image']['advanced']['enabled'] ?? [],
 						],
 						'valueResolver' => function ( $value ) use ( $placement ) {
 							return 'on' === ( $value ?? 'on' ) && 'background' === $placement ? 'add' : 'remove';
@@ -497,31 +477,24 @@ class PostTitleModule implements DependencyInterface {
 					// Featured Image.
 					$elements->style(
 						[
-							'attrName'   => 'featuredImage',
+							'attrName'   => 'image',
 							'styleProps' => [
-								'defaultPrintedStyleAttrs' => $default_printed_style_attrs['featuredImage']['decoration'] ?? [],
+								'defaultPrintedStyleAttrs' => $default_printed_style_attrs['image']['decoration'] ?? [],
 								'attrsFilter'              => function ( $decoration_attrs ) use ( $attrs ) {
 									return PostTitleModule::filter_featured_image_decoration_attrs( $decoration_attrs, $attrs );
 								},
-								'advancedStyles'           => [
-									[
-										'componentName' => 'divi/common',
-										'props'         => [
-											'selector' => $order_class . ' .et_pb_title_featured_container',
-											'attr'     => $attrs['featuredImage']['decoration']['sizing'] ?? [],
-											'declarationFunction' => function ( array $params ) use ( $attrs ) {
-												return PostTitleModule::title_featured_container_style_declaration( $params, $attrs );
-											},
-										],
-									],
-									[
-										'componentName' => 'divi/common',
-										'props'         => [
-											'selector' => $order_class . ' .et_pb_image_wrap',
-											'attr'     => $attrs['featuredImage']['decoration']['sizing'] ?? [],
-											'declarationFunction' => function ( array $params ) use ( $attrs ) {
-												return PostTitleModule::image_wrap_style_declaration( $params, $attrs );
-											},
+								'fit'                      => [
+									'selector' => "{$order_class} .et_pb_title_featured_container img",
+								],
+								'layout'                   => [
+									'selector' => "{$order_class} .et_pb_image_wrap",
+								],
+								'sizing'                   => [
+									'propertySelectors' => [
+										'desktop' => [
+											'value' => [
+												'aspect-ratio' => "{$order_class} .et_pb_title_featured_container img",
+											],
 										],
 									],
 								],
@@ -864,7 +837,7 @@ class PostTitleModule implements DependencyInterface {
 	 */
 	public static function render_featured_image( array $attrs, string $location, ModuleElements $elements, ?bool $has_wrapper = false ): string {
 		$enabled = ModuleUtils::has_value(
-			$attrs['featuredImage']['advanced']['enabled'] ?? [],
+			$attrs['image']['advanced']['enabled'] ?? [],
 			[
 				'valueResolver' => function ( $value ) {
 					return 'on' === ( $value ?? 'on' );
@@ -876,7 +849,7 @@ class PostTitleModule implements DependencyInterface {
 			return '';
 		}
 
-		$placement = $attrs['featuredImage']['advanced']['placement']['desktop']['value'] ?? 'below';
+		$placement = $attrs['image']['advanced']['placement']['desktop']['value'] ?? 'below';
 
 		if ( $location !== $placement ) {
 			return '';
@@ -898,7 +871,7 @@ class PostTitleModule implements DependencyInterface {
 				'childrenSanitizer' => 'et_core_esc_previously',
 				'children'          => $elements->render(
 					[
-						'attrName'   => 'featuredImage',
+						'attrName'   => 'image',
 						'tagName'    => 'img',
 						'attributes' => [
 							'class' => $post_featured_image['class'],
@@ -933,7 +906,7 @@ class PostTitleModule implements DependencyInterface {
 					'class' => [
 						'et_pb_title_featured_container' => true,
 						'et_multi_view_hidden'           => [
-							'attr'          => $attrs['featuredImage']['advanced']['enabled'] ?? [],
+							'attr'          => $attrs['image']['advanced']['enabled'] ?? [],
 							'valueResolver' => function ( $value ) {
 								return 'on' !== ( $value ?? 'on' ) ? 'add' : 'remove';
 							},
@@ -945,49 +918,6 @@ class PostTitleModule implements DependencyInterface {
 				'children'          => $children,
 			]
 		);
-	}
-
-	/**
-	 * Style declaration for the image wrap.
-	 *
-	 * This function is equivalent of JS function imageWrapStyleDeclaration located in
-	 * visual-builder/packages/module-library/src/components/post-title/style-declarations/image-wrap/index.ts.
-	 *
-	 * @since ??
-	 *
-	 * @param array $params The parameters of the declaration function.
-	 * @param array $attrs The module attributes.
-	 *
-	 * @return string - The style declarations.
-	 */
-	public static function image_wrap_style_declaration( $params, $attrs ) {
-		$state        = $params['state'];
-		$breakpoint   = $params['breakpoint'];
-		$declarations = new StyleDeclarations(
-			[
-				'returnType' => 'string',
-				'important'  => false,
-			]
-		);
-
-		$force_fullwidth = $attrs['featuredImage']['advanced']['forceFullwidth']['desktop']['value'] ?? 'on';
-
-		if ( 'off' === $force_fullwidth ) {
-			$enabled = ModuleUtils::use_attr_value(
-				[
-					'attr'         => $attrs['featuredImage']['advanced']['enabled'] ?? [],
-					'state'        => $state,
-					'breakpoint'   => $breakpoint,
-					'defaultValue' => 'on',
-				]
-			);
-
-			if ( 'on' === $enabled ) {
-				$declarations->add( 'width', 'auto' );
-			}
-		}
-
-		return $declarations->value();
 	}
 
 	/**
@@ -1017,57 +947,6 @@ class PostTitleModule implements DependencyInterface {
 
 		return $declarations->value();
 	}
-
-	/**
-	 * Style declaration for the title featured container.
-	 *
-	 * This function is equivalent of JS function titleFeaturedContainerStyleDeclaration located in
-	 * visual-builder/packages/module-library/src/components/post-title/style-declarations/title-featured-container/index.ts.
-	 *
-	 * @since ??
-	 *
-	 * @param array $params The parameters of the declaration function.
-	 * @param array $attrs The module attributes.
-	 *
-	 * @return string - The style declarations.
-	 */
-	public static function title_featured_container_style_declaration( $params, $attrs ) {
-		$declarations = new StyleDeclarations(
-			[
-				'returnType' => 'string',
-				'important'  => false,
-			]
-		);
-
-		$image_alignments = [
-			'left'   => 'auto auto auto 0',
-			'center' => 'auto',
-			'right'  => 'auto 0 auto auto',
-		];
-
-		$alignment       = $params['attrValue']['alignment'] ?? 'center';
-		$force_fullwidth = $attrs['featuredImage']['advanced']['forceFullwidth']['desktop']['value'] ?? 'on';
-		$placement       = $attrs['featuredImage']['advanced']['placement']['desktop']['value'] ?? 'below';
-
-		if ( 'off' === $force_fullwidth && 'background' !== $placement ) {
-			$enabled = ModuleUtils::use_attr_value(
-				[
-					'attr'         => $attrs['featuredImage']['advanced']['enabled'],
-					'state'        => $params['state'],
-					'breakpoint'   => $params['breakpoint'],
-					'defaultValue' => 'on',
-				]
-			);
-
-			if ( 'on' === $enabled ) {
-				$declarations->add( 'margin', $image_alignments[ $alignment ] );
-				$declarations->add( 'text-align', $alignment );
-			}
-		}
-
-		return $declarations->value();
-	}
-
 
 	/**
 	 * Get information about the featured image of the current post.

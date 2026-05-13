@@ -147,6 +147,9 @@ class TransitionUtils {
 			'background-color',
 			'background-position',
 			'background-size',
+			'aspect-ratio',
+			'object-fit',
+			'object-position',
 			'width',
 			'height',
 			'max-width',
@@ -400,6 +403,8 @@ class TransitionUtils {
 				return self::get_transition_position_properties( $attr_value, $active_mode );
 			case 'sizing':
 				return self::get_transition_sizing_properties( $attr_value, $active_mode );
+			case 'fit':
+				return self::get_transition_fit_properties( $attr_value, $active_mode );
 			case 'spacing':
 				return self::get_transition_spacing_properties( $attr_value, $active_mode );
 			case 'transform':
@@ -1127,11 +1132,57 @@ class TransitionUtils {
 							$css_properties[] = 'max-width';
 						} elseif ( 'minWidth' === $sizing_key ) {
 							$css_properties[] = 'min-width';
+						} elseif ( 'aspectRatio' === $sizing_key ) {
+							$css_properties[] = 'aspect-ratio';
 						} else {
 							$css_properties[] = $sizing_key;
 						}
 					}
 				}
+			}
+		}
+
+		if ( ! empty( $css_properties ) ) {
+			$css_properties = array_unique( $css_properties );
+			foreach ( $css_properties as $css_property_key => $css_property ) {
+				if ( ! in_array( $css_property, $animatable_properties, true ) ) {
+					unset( $css_properties[ $css_property_key ] );
+				}
+			}
+		}
+
+		return $css_properties;
+	}
+
+	/**
+	 * Get fit CSS properties for transition.
+	 *
+	 * @since ??
+	 *
+	 * @param array  $attr Array of fit attributes.
+	 * @param string $mode Mode of the element. One of `hover`, or `sticky`.
+	 *
+	 * @return array Array of CSS properties for transition fit.
+	 */
+	public static function get_transition_fit_properties( array $attr, string $mode ): array {
+		$css_properties        = [];
+		$animatable_properties = self::get_animatable_options_array();
+		$fit_values            = $attr[ $mode ] ?? null;
+
+		if ( is_array( $fit_values ) && ! empty( $fit_values ) ) {
+			// Handle the two known camelCase fit keys without iterating all mode entries.
+			if ( array_key_exists( 'objectFit', $fit_values ) ) {
+				$css_properties[] = 'object-fit';
+				unset( $fit_values['objectFit'] );
+			}
+
+			if ( array_key_exists( 'objectPosition', $fit_values ) ) {
+				$css_properties[] = 'object-position';
+				unset( $fit_values['objectPosition'] );
+			}
+
+			if ( ! empty( $fit_values ) ) {
+				$css_properties = array_merge( $css_properties, array_keys( $fit_values ) );
 			}
 		}
 

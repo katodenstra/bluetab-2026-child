@@ -260,13 +260,17 @@ class DiviPackageBuild extends PackageBuild {
 		// Generate version.
 		$version = $divi_version . '-' . $this->build_version;
 
+		// Do not overwrite merged `deps` (registration + webpack) when overlaying `$script`.
+		$script_overlay = $script;
+		unset( $script_overlay['deps'] );
+
 		$this->set_properties(
 			[
 				'name'    => $this->name,
 				'version' => $version,
 				'script'  => array_merge(
 					$generated_script,
-					$script
+					$script_overlay
 				),
 				'style'   => wp_parse_args(
 					$generated_style,

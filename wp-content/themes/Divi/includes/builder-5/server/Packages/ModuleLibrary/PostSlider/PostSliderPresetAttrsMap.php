@@ -8,6 +8,9 @@
 
 namespace ET\Builder\Packages\ModuleLibrary\PostSlider;
 
+use ET\Builder\Packages\Module\Options\Fit\FitPresetAttrsMap;
+use ET\Builder\Packages\Module\Options\Sizing\SizingPresetAttrsMap;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	die( 'Direct access forbidden.' );
 }
@@ -160,6 +163,7 @@ class PostSliderPresetAttrsMap {
 			'button.decoration.button.decoration.sizing__size',
 			'button.decoration.button.decoration.sizing__height',
 			'button.decoration.button.decoration.sizing__maxHeight',
+			'button.decoration.button.decoration.sizing__aspectRatio',
 			'button.decoration.button.decoration.sizing__flexType',
 			'button.decoration.font.font__textAlign',
 			'button.decoration.font.font__lineHeight',
@@ -333,7 +337,9 @@ class PostSliderPresetAttrsMap {
 					'preset'   => [ 'html' ],
 					'subName'  => 'htmlBefore',
 				],
-			]
+			],
+			SizingPresetAttrsMap::get_map( 'image.decoration.sizing' ),
+			FitPresetAttrsMap::get_map( 'image.decoration.fit' )
 		);
 	}
 }

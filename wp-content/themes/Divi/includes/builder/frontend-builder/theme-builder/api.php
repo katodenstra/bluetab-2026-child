@@ -296,18 +296,25 @@ function et_theme_builder_api_get_template_settings() {
 	$page     = isset( $_GET['page'] ) ? (int) $_GET['page'] : 1;
 	$page     = $page >= 1 ? $page : 1;
 	$per_page = 30;
-	$settings = et_theme_builder_get_flat_template_settings_options();
+	$results  = et_theme_builder_execute_with_assignment_settings_locale(
+		static function () use ( $parent, $search, $page, $per_page ) {
+			$settings = et_theme_builder_get_flat_template_settings_options();
 
-	if ( ! isset( $settings[ $parent ] ) || empty( $settings[ $parent ]['options'] ) ) {
+			if ( ! isset( $settings[ $parent ] ) || empty( $settings[ $parent ]['options'] ) ) {
+				return new WP_Error( 'invalid_parent_setting', __( 'Invalid parent setting specified.', 'et_builder' ) );
+			}
+
+			return et_theme_builder_get_template_setting_child_options( $settings[ $parent ], array(), $search, $page, $per_page );
+		}
+	);
+
+	if ( is_wp_error( $results ) ) {
 		wp_send_json_error(
 			array(
-				'message' => __( 'Invalid parent setting specified.', 'et_builder' ),
+				'message' => $results->get_error_message(),
 			)
 		);
 	}
-
-	$setting = $settings[ $parent ];
-	$results = et_theme_builder_get_template_setting_child_options( $setting, array(), $search, $page, $per_page );
 
 	wp_send_json_success(
 		array(

@@ -14,7 +14,7 @@
       "selector": "{{selector}}",
       "styleProps": {
         "layout": {
-          "selector": "{{selector}} form"
+          "selector": "{{selector}}, {{selector}} form"
         }
       },
       "settings": {

@@ -8,6 +8,12 @@
 
 namespace ET\Builder\Packages\ModuleLibrary\Blurb;
 
+use ET\Builder\Packages\Module\Options\Border\BorderPresetAttrsMap;
+use ET\Builder\Packages\Module\Options\BoxShadow\BoxShadowPresetAttrsMap;
+use ET\Builder\Packages\Module\Options\Fit\FitPresetAttrsMap;
+use ET\Builder\Packages\Module\Options\Filters\FiltersPresetAttrsMap;
+use ET\Builder\Packages\Module\Options\Sizing\SizingPresetAttrsMap;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	die( 'Direct access forbidden.' );
 }
@@ -43,7 +49,12 @@ class BlurbPresetAttrsMap {
 					'preset'   => [ 'style' ],
 					'subName'  => 'iconFontSize',
 				],
-			]
+			],
+			BorderPresetAttrsMap::get_map( 'imageIcon.decoration.border' ),
+			BoxShadowPresetAttrsMap::get_map( 'imageIcon.decoration.boxShadow' ),
+			FiltersPresetAttrsMap::get_map( 'imageIcon.decoration.filters' ),
+			SizingPresetAttrsMap::get_map( 'imageIcon.decoration.sizing' ),
+			FitPresetAttrsMap::get_map( 'imageIcon.decoration.fit' )
 		);
 	}
 }

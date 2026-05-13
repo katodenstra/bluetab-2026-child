@@ -529,7 +529,21 @@ class FilterablePortfolioModule implements DependencyInterface {
 					// Image.
 					$elements->style(
 						[
-							'attrName' => 'image',
+							'attrName'   => 'image',
+							'styleProps' => [
+								'fit'    => [
+									'selector' => "{$order_class} .et_portfolio_image img",
+								],
+								'sizing' => [
+									'propertySelectors' => [
+										'desktop' => [
+											'value' => [
+												'aspect-ratio' => "{$order_class} .et_portfolio_image img",
+											],
+										],
+									],
+								],
+							],
 						]
 					),
 					CommonStyle::style(

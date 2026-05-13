@@ -664,57 +664,48 @@
           }
         },
         "decoration": {
-          "border": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "render": true,
-              "priority": 10,
-              "component": {
-                "type": "group",
-                "name": "divi/border",
-                "props": {
-                  "grouped": true,
-                  "fieldLabel": "Image"
-                }
-              }
-            }
-          },
-          "boxShadow": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "render": true,
-              "priority": 10,
-              "component": {
-                "type": "group",
-                "name": "divi/box-shadow",
-                "props": {
-                  "grouped": true,
-                  "fieldLabel": "Image "
-                }
-              }
-            }
-          },
-          "filters": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "render": true,
-              "priority": 10,
-              "component": {
-                "type": "group",
-                "name": "divi/filters",
-                "props": {
-                  "grouped": true,
-                  "fieldLabel": "Image "
-                }
+          "image": {
+            "panel": "design",
+            "groupType": "group",
+            "groupName": "image",
+            "priority": 10,
+            "component": {
+              "type": "group",
+              "name": "divi/image",
+              "props": {
+                "attrName": "image",
+                "groupLabel": "Image",
+                "grouped": true,
+                "dynamicSubgroupHost": true,
+                "presetGroup": "divi/image"
               }
             }
           }
         }
       },
       "styleProps": {
+        "fit": {
+          "selector": "{{selector}} .et_pb_gallery_image img"
+        },
+        "spacing": {
+          "important": {
+            "desktop": {
+              "value": {
+                "margin-left": true,
+                "margin-right": true
+              }
+            }
+          }
+        },
+        "sizing": {
+          "propertySelectors": {
+            "desktop": {
+              "value": {
+                "aspect-ratio": "{{selector}} .et_pb_gallery_image img"
+              }
+            }
+          }
+        },
         "border": {
           "propertySelectors": {
             "desktop": {
@@ -957,20 +948,6 @@
             "groupLabel": "Border",
             "clipboardCategory": "style",
             "presetGroup": "divi/border"
-          }
-        }
-      },
-      "designImage": {
-        "panel": "design",
-        "groupName": "image",
-        "priority": 10,
-        "multiElements": true,
-        "component": {
-          "name": "divi/composite",
-          "props": {
-            "groupLabel": "Image",
-            "clipboardCategory": "style",
-            "dynamicSubgroupHost": true
           }
         }
       },

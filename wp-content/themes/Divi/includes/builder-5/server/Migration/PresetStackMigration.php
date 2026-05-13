@@ -209,7 +209,7 @@ class PresetStackMigration extends MigrationContentBase {
 		}
 
 		// Quick check: Skip if content doesn't contain preset attributes.
-		if ( strpos( $content, '"modulePreset"' ) === false && strpos( $content, '"presetId"' ) === false ) {
+		if ( ! str_contains( $content, '"modulePreset"' ) && ! str_contains( $content, '"presetId"' ) ) {
 			return $content;
 		}
 
@@ -244,8 +244,7 @@ class PresetStackMigration extends MigrationContentBase {
 
 			// If changes were made, serialize the flat objects back into content.
 			if ( $changes_made ) {
-				$blocks = MigrationUtils::flat_objects_to_blocks( $flat_objects );
-				return MigrationUtils::serialize_blocks( $blocks );
+				return MigrationUtils::serialize_flat_objects( $flat_objects );
 			}
 
 			return $content;

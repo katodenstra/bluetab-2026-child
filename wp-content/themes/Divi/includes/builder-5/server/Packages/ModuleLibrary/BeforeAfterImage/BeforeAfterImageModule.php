@@ -240,6 +240,18 @@ class BeforeAfterImageModule implements DependencyInterface {
 							'attrName' => 'labels',
 						]
 					),
+					// Before image.
+					$elements->style(
+						[
+							'attrName' => 'beforeImage',
+						]
+					),
+					// After image.
+					$elements->style(
+						[
+							'attrName' => 'afterImage',
+						]
+					),
 					// Slider.
 					$elements->style(
 						[

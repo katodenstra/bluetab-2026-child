@@ -8,7 +8,9 @@
 
 namespace ET\Builder\Packages\ModuleLibrary\Testimonial;
 
+use ET\Builder\Packages\Module\Options\Fit\FitPresetAttrsMap;
 use ET\Builder\Packages\Module\Options\Loop\LoopPresetAttrsMap;
+use ET\Builder\Packages\Module\Options\Sizing\SizingPresetAttrsMap;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	die( 'Direct access forbidden.' );
@@ -56,10 +58,10 @@ class TestimonialPresetAttrsMap {
 				'attrName' => 'content.innerContent',
 				'preset'   => 'content',
 			],
-			'portrait.innerContent__url'                   => [
+			'portrait.innerContent__src'                   => [
 				'attrName' => 'portrait.innerContent',
 				'preset'   => 'content',
-				'subName'  => 'url',
+				'subName'  => 'src',
 			],
 			'quoteIcon.decoration.icon__show'              => [
 				'attrName' => 'quoteIcon.decoration.icon',
@@ -1293,6 +1295,13 @@ class TestimonialPresetAttrsMap {
 				'preset'   => [ 'style' ],
 				'subName'  => 'maxHeight',
 			],
+			'module.decoration.sizing__aspectRatio'        => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [
+					'style',
+				],
+				'subName'  => 'aspectRatio',
+			],
 			'module.decoration.spacing__margin'            => [
 				'attrName' => 'module.decoration.spacing',
 				'preset'   => [ 'style' ],
@@ -1941,6 +1950,11 @@ class TestimonialPresetAttrsMap {
 
 		$loop_preset_attrs = LoopPresetAttrsMap::get_map( 'module.advanced.loop' );
 
-		return array_merge( $static_attrs, $loop_preset_attrs );
+		return array_merge(
+			$static_attrs,
+			SizingPresetAttrsMap::get_map( 'portrait.decoration.sizing' ),
+			FitPresetAttrsMap::get_map( 'portrait.decoration.fit' ),
+			$loop_preset_attrs
+		);
 	}
 }

@@ -61,6 +61,7 @@ use ET\Builder\VisualBuilder\REST\ContentConversion\ContentConversionController;
 use ET\Builder\VisualBuilder\REST\ContentMigration\ContentMigrationController;
 use ET\Builder\VisualBuilder\REST\CustomFont\CustomFontController;
 use ET\Builder\VisualBuilder\REST\DiviLibrary\DiviLibraryController;
+use ET\Builder\VisualBuilder\REST\OutsideVb\OutsideVbController;
 use ET\Builder\VisualBuilder\REST\Portability\PortabilityController;
 use ET\Builder\VisualBuilder\REST\SyncToServer\SyncToServerController;
 use ET\Builder\VisualBuilder\REST\UpdateDefaultColors\UpdateDefaultColorsController;
@@ -843,6 +844,90 @@ class RESTRegistration implements DependencyInterface {
 		);
 
 		/**
+		 * `/outside-vb` REST routes for AI agent tools (Theme Builder templates, theme options, layout export, post layout).
+		 */
+		$route->post(
+			'/outside-vb/theme-builder/list-templates',
+			[
+				'args'                => [ OutsideVbController::class, 'list_templates_args' ],
+				'callback'            => [ OutsideVbController::class, 'list_templates' ],
+				'permission_callback' => [ OutsideVbController::class, 'theme_builder_permission' ],
+			]
+		);
+
+		$route->post(
+			'/outside-vb/theme-builder/create-template',
+			[
+				'args'                => [ OutsideVbController::class, 'create_template_args' ],
+				'callback'            => [ OutsideVbController::class, 'create_template' ],
+				'permission_callback' => [ OutsideVbController::class, 'theme_builder_permission' ],
+			]
+		);
+
+		$route->post(
+			'/outside-vb/theme-builder/update-template',
+			[
+				'args'                => [ OutsideVbController::class, 'update_template_args' ],
+				'callback'            => [ OutsideVbController::class, 'update_template' ],
+				'permission_callback' => [ OutsideVbController::class, 'update_template_permission' ],
+			]
+		);
+
+		$route->post(
+			'/outside-vb/theme-builder/delete-template',
+			[
+				'args'                => [ OutsideVbController::class, 'delete_template_args' ],
+				'callback'            => [ OutsideVbController::class, 'delete_template' ],
+				'permission_callback' => [ OutsideVbController::class, 'delete_template_permission' ],
+			]
+		);
+
+		$route->post(
+			'/outside-vb/theme-builder/assign-template',
+			[
+				'args'                => [ OutsideVbController::class, 'assign_template_args' ],
+				'callback'            => [ OutsideVbController::class, 'assign_template' ],
+				'permission_callback' => [ OutsideVbController::class, 'assign_template_permission' ],
+			]
+		);
+
+		$route->post(
+			'/outside-vb/theme-options/get',
+			[
+				'args'                => [ OutsideVbController::class, 'get_theme_options_args' ],
+				'callback'            => [ OutsideVbController::class, 'get_theme_options' ],
+				'permission_callback' => [ OutsideVbController::class, 'theme_options_permission' ],
+			]
+		);
+
+		$route->post(
+			'/outside-vb/theme-options/update',
+			[
+				'args'                => [ OutsideVbController::class, 'update_theme_option_args' ],
+				'callback'            => [ OutsideVbController::class, 'update_theme_option' ],
+				'permission_callback' => [ OutsideVbController::class, 'theme_options_permission' ],
+			]
+		);
+
+		$route->post(
+			'/outside-vb/export-layout',
+			[
+				'args'                => [ OutsideVbController::class, 'export_layout_args' ],
+				'callback'            => [ OutsideVbController::class, 'export_layout' ],
+				'permission_callback' => [ OutsideVbController::class, 'export_layout_permission' ],
+			]
+		);
+
+		$route->post(
+			'/outside-vb/posts/set-layout',
+			[
+				'args'                => [ OutsideVbController::class, 'set_post_layout_args' ],
+				'callback'            => [ OutsideVbController::class, 'set_post_layout' ],
+				'permission_callback' => [ OutsideVbController::class, 'set_post_layout_permission' ],
+			]
+		);
+
+		/**
 		 * `/sync-to-server` REST routes.
 		 */
 		$route->post(
@@ -1139,6 +1224,42 @@ class RESTRegistration implements DependencyInterface {
 				'args'                => [ PageManagerController::class, 'update_order_args' ],
 				'callback'            => [ PageManagerController::class, 'update_order' ],
 				'permission_callback' => [ PageManagerController::class, 'update_order_permission' ],
+			]
+		);
+
+		$route->post(
+			'/page-manager/update',
+			[
+				'args'                => [ PageManagerController::class, 'update_args' ],
+				'callback'            => [ PageManagerController::class, 'update' ],
+				'permission_callback' => [ PageManagerController::class, 'update_permission' ],
+			]
+		);
+
+		$route->post(
+			'/page-manager/update-status',
+			[
+				'args'                => [ PageManagerController::class, 'update_status_args' ],
+				'callback'            => [ PageManagerController::class, 'update_status' ],
+				'permission_callback' => [ PageManagerController::class, 'update_status_permission' ],
+			]
+		);
+
+		$route->get(
+			'/page-manager/search',
+			[
+				'args'                => [ PageManagerController::class, 'search_args' ],
+				'callback'            => [ PageManagerController::class, 'search' ],
+				'permission_callback' => [ PageManagerController::class, 'search_permission' ],
+			]
+		);
+
+		$route->get(
+			'/page-manager/show',
+			[
+				'args'                => [ PageManagerController::class, 'show_args' ],
+				'callback'            => [ PageManagerController::class, 'show' ],
+				'permission_callback' => [ PageManagerController::class, 'show_permission' ],
 			]
 		);
 

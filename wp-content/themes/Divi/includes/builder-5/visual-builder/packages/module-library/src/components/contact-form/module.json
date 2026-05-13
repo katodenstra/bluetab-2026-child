@@ -57,7 +57,7 @@
         "border": {},
         "boxShadow": {},
         "layout": {
-          "selector": "{{selector}} .et_pb_contact_form"
+          "selector": "{{selector}}, {{selector}} .et_pb_contact_form"
         }
       },
       "settings": {
@@ -487,7 +487,8 @@
     "contactButton": {
       "label": "Contact Button",
       "subName": "contactButton",
-      "selectorSuffix": ".et_pb_contact_form_container .et_contact_bottom_container .et_pb_contact_submit.et_pb_button"
+      "selector": "{{selector}}.et_pb_contact_form_container .et_contact_bottom_container .et_pb_contact_submit.et_pb_button",
+      "selectorSuffix": ""
     },
     "contactFields": {
       "label": "Form Fields",

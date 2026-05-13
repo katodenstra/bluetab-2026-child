@@ -8,7 +8,9 @@
 
 namespace ET\Builder\Packages\ModuleLibrary\FullwidthHeader;
 
+use ET\Builder\Packages\Module\Options\Fit\FitPresetAttrsMap;
 use ET\Builder\Packages\Module\Options\Loop\LoopPresetAttrsMap;
+use ET\Builder\Packages\Module\Options\Sizing\SizingPresetAttrsMap;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	die( 'Direct access forbidden.' );
@@ -1670,6 +1672,11 @@ class FullwidthHeaderPresetAttrsMap {
 				'preset'   => [ 'style' ],
 				'subName'  => 'maxHeight',
 			],
+			'buttonOne.decoration.sizing__aspectRatio'     => [
+				'attrName' => 'buttonOne.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'aspectRatio',
+			],
 			'buttonOne.decoration.sizing__flexType'        => [
 				'attrName' => 'buttonOne.decoration.sizing',
 				'preset'   => [ 'html' ],
@@ -2235,6 +2242,11 @@ class FullwidthHeaderPresetAttrsMap {
 				'preset'   => [ 'style' ],
 				'subName'  => 'maxHeight',
 			],
+			'buttonTwo.decoration.sizing__aspectRatio'     => [
+				'attrName' => 'buttonTwo.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'aspectRatio',
+			],
 			'buttonTwo.decoration.sizing__flexType'        => [
 				'attrName' => 'buttonTwo.decoration.sizing',
 				'preset'   => [ 'html' ],
@@ -2338,6 +2350,13 @@ class FullwidthHeaderPresetAttrsMap {
 				'attrName' => 'module.decoration.sizing',
 				'preset'   => [ 'style' ],
 				'subName'  => 'maxHeight',
+			],
+			'module.decoration.sizing__aspectRatio'        => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [
+					'style',
+				],
+				'subName'  => 'aspectRatio',
 			],
 			'module.decoration.sizing__alignSelf'          => [
 				'attrName' => 'module.decoration.sizing',
@@ -3110,8 +3129,10 @@ class FullwidthHeaderPresetAttrsMap {
 			],
 		];
 
-		$loop_preset_attrs = LoopPresetAttrsMap::get_map( 'module.advanced.loop' );
+		$loop_preset_attrs  = LoopPresetAttrsMap::get_map( 'module.advanced.loop' );
+		$image_sizing_attrs = SizingPresetAttrsMap::get_map( 'image.decoration.sizing' );
+		$image_fit_attrs    = FitPresetAttrsMap::get_map( 'image.decoration.fit' );
 
-		return array_merge( $static_attrs, $loop_preset_attrs );
+		return array_merge( $static_attrs, $loop_preset_attrs, $image_sizing_attrs, $image_fit_attrs );
 	}
 }

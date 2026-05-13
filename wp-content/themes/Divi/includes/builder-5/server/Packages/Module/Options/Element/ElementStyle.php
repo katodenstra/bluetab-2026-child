@@ -22,6 +22,7 @@ use ET\Builder\Packages\Module\Options\BoxShadow\BoxShadowStyle;
 use ET\Builder\Packages\Module\Options\Button\ButtonStyle;
 use ET\Builder\Packages\Module\Options\DisabledOn\DisabledOnStyle;
 use ET\Builder\Packages\Module\Options\Filters\FiltersStyle;
+use ET\Builder\Packages\Module\Options\Fit\FitStyle;
 use ET\Builder\Packages\Module\Options\FontBodyGroup\FontBodyStyle;
 use ET\Builder\Packages\Module\Options\FontHeaderGroup\FontHeaderStyle;
 use ET\Builder\Packages\Module\Options\Font\FontStyle;
@@ -79,6 +80,7 @@ class ElementStyle {
 	 *     @type array         $bodyFont                  Optional. An array of bodyFont style data. Default `[]`.
 	 *     @type array         $spacing                   Optional. An array of spacing style data. Default `[]`.
 	 *     @type array         $sizing                    Optional. An array of sizing style data. Default `[]`.
+	 *     @type array         $fit                       Optional. An array of fit (object-fit / object-position) style data. Default `[]`.
 	 *     @type array         $border                    Optional. An array of border style data. Default `[]`.
 	 *     @type array         $boxShadow                 Optional. An array of boxShadow style data. Default `[]`.
 	 *     @type array         $filters                   Optional. An array of filter style data. Default `[]`.
@@ -142,6 +144,7 @@ class ElementStyle {
 				'headingFont'              => [],
 				'spacing'                  => [],
 				'sizing'                   => [],
+				'fit'                      => [],
 				'border'                   => [],
 				'boxShadow'                => [],
 				'filters'                  => [],
@@ -183,6 +186,7 @@ class ElementStyle {
 		$heading_font                = $args['headingFont'];
 		$spacing                     = $args['spacing'];
 		$sizing                      = $args['sizing'];
+		$fit                         = $args['fit'];
 		$border                      = $args['border'];
 		$box_shadow                  = $args['boxShadow'];
 		$filters                     = $args['filters'];
@@ -465,6 +469,41 @@ class ElementStyle {
 
 			$transition_data['attrs']['sizing'] = $element_attrs['sizing'];
 			$transition_data['props']['sizing'] = $sizing;
+		}
+
+		$has_fit_attr   = ! empty( $element_attrs['fit'] );
+		$has_fit_preset = ! empty( $default_printed_style_attrs['fit'] );
+
+		$final_default_printed_fit_attr = $default_printed_style_attrs['fit']
+			?? $fit['defaultPrintedStyleAttr']
+			?? [];
+
+		$element_fit = ( $has_fit_attr || $has_fit_preset ) ? FitStyle::style(
+			[
+				'selector'                => $fit['selector'] ?? $selector,
+				'selectors'               => $fit['selectors'] ?? [],
+				'propertySelectors'       => $fit['propertySelectors'] ?? [],
+				'selectorFunction'        => $fit['selectorFunction'] ?? null,
+				'attr'                    => $element_attrs['fit'] ?? [],
+				'defaultPrintedStyleAttr' => $final_default_printed_fit_attr,
+				'important'               => $fit['important'] ?? false,
+				'orderClass'              => $order_class,
+				'isInsideStickyModule'    => $is_inside_sticky_module,
+				'stickyParentOrderClass'  => $sticky_parent_order_class,
+				'returnType'              => $args['returnType'],
+				'atRules'                 => $fit['atRules'] ?? $at_rules,
+			]
+		) : null;
+
+		if ( $element_fit ) {
+			if ( $return_as_array ) {
+				array_push( $element, ...$element_fit );
+			} else {
+				$element .= $element_fit;
+			}
+
+			$transition_data['attrs']['fit'] = $element_attrs['fit'] ?? [];
+			$transition_data['props']['fit'] = $fit;
 		}
 
 		$element_border = ! empty( $element_attrs['border'] ) ? BorderStyle::style(

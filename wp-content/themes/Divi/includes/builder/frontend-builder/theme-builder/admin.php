@@ -94,14 +94,6 @@ function et_theme_builder_enqueue_scripts() {
 
 	wp_enqueue_script( $asset_id, $asset_uri, $dependencies, $asset_ver, true );
 
-	// Strip 'validate' key from settings as it is used server-side only.
-	$default_settings = et_theme_builder_get_template_settings_options();
-	foreach ( $default_settings as $group_key => $group ) {
-		foreach ( $group['settings'] as $setting_key => $setting ) {
-			unset( $default_settings[ $group_key ]['settings'][ $setting_key ]['validate'] );
-		}
-	}
-
 	// Library item editor.
 	$theme_builder_id   = 0;
 	$library_item_title = '';
@@ -116,7 +108,25 @@ function et_theme_builder_enqueue_scripts() {
 		}
 	}
 
-	$preloaded_settings = et_theme_builder_get_template_settings_options_for_preloading( $theme_builder_id );
+	$template_settings = et_theme_builder_execute_with_assignment_settings_locale(
+		static function () use ( $theme_builder_id ) {
+			return array(
+				'default'   => et_theme_builder_get_template_settings_options(),
+				'preloaded' => et_theme_builder_get_template_settings_options_for_preloading( $theme_builder_id ),
+			);
+		}
+	);
+
+	$default_settings = $template_settings['default'];
+
+	// Strip 'validate' key from settings as it is used server-side only.
+	foreach ( $default_settings as $group_key => $group ) {
+		foreach ( $group['settings'] as $setting_key => $setting ) {
+			unset( $default_settings[ $group_key ]['settings'][ $setting_key ]['validate'] );
+		}
+	}
+
+	$preloaded_settings = $template_settings['preloaded'];
 	foreach ( $preloaded_settings as $setting_key => $setting ) {
 		unset( $preloaded_settings[ $setting_key ]['validate'] );
 	}

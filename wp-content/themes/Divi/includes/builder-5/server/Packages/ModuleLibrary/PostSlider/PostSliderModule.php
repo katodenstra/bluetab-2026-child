@@ -449,7 +449,21 @@ class PostSliderModule implements DependencyInterface {
 					// image.
 					$elements->style(
 						[
-							'attrName' => 'image',
+							'attrName'   => 'image',
+							'styleProps' => [
+								'fit'    => [
+									'selector' => "{$order_class} .et_pb_slide_image img",
+								],
+								'sizing' => [
+									'propertySelectors' => [
+										'desktop' => [
+											'value' => [
+												'aspect-ratio' => "{$order_class} .et_pb_slide_image img",
+											],
+										],
+									],
+								],
+							],
 						]
 					),
 					// content overlay.

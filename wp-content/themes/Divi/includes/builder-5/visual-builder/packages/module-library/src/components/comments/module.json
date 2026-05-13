@@ -35,7 +35,7 @@
           "important": true
         },
         "layout": {
-          "selector": "{{selector}} #comment-wrap"
+          "selector": "{{selector}}, {{selector}} #comment-wrap"
         }
       },
       "settings": {
@@ -151,52 +151,20 @@
           }
         },
         "decoration": {
-          "border": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "priority": 60,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/border",
-                "props": {
-                  "grouped": true,
-                  "fieldLabel": "Image"
-                }
-              }
-            }
-          },
-          "boxShadow": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "priority": 60,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/box-shadow",
-                "props": {
-                  "grouped": true,
-                  "fieldLabel": "Image"
-                }
-              }
-            }
-          },
-          "filters": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "attrName": "image.decoration.filters",
-              "priority": 60,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/filters",
-                "props": {
-                  "grouped": true,
-                  "fieldLabel": "Image"
-                }
+          "image": {
+            "panel": "design",
+            "groupType": "group",
+            "groupName": "image",
+            "priority": 10,
+            "component": {
+              "type": "group",
+              "name": "divi/image",
+              "props": {
+                "attrName": "image",
+                "groupLabel": "Image",
+                "grouped": true,
+                "dynamicSubgroupHost": true,
+                "presetGroup": "divi/image"
               }
             }
           }
@@ -545,20 +513,6 @@
             "groupLabel": "Fields",
             "clipboardCategory": "style",
             "attrName": "field",
-            "dynamicSubgroupHost": true
-          }
-        }
-      },
-      "designImage": {
-        "panel": "design",
-        "priority": 10,
-        "groupName": "image",
-        "multiElements": true,
-        "component": {
-          "name": "divi/composite",
-          "props": {
-            "groupLabel": "Image",
-            "clipboardCategory": "style",
             "dynamicSubgroupHost": true
           }
         }

@@ -49,48 +49,6 @@ use WP_Block;
  */
 class WooCommerceProductImagesModule implements DependencyInterface {
 
-
-	/**
-	 * Generates the style declaration for forcing a fullwidth image in the WooCommerce Product Image module.
-	 *
-	 * @since ??
-	 *
-	 * @param array $params {
-	 *                      An array of arguments.
-	 *
-	 * @type string $attrValue  Whether to force fullwidth. Accepts 'on' or 'off'. Default 'off'.
-	 * @type string $returnType Optional. The return type for the style declarations.
-	 * }
-	 *
-	 * @return string CSS style declaration.
-	 *
-	 * @example
-	 * ```php
-	 * // Example of forcing a fullwidth image.
-	 * $params = [
-	 *   'attrValue' => 'on',
-	 * ];
-	 * $style = WooCommerceProductImagesModule::fullwidth_module_style_declaration( $params );
-	 * // Result: 'width: 100%;'
-	 * ```
-	 */
-	public static function fullwidth_module_style_declaration( array $params ): string {
-		$style_declarations = new StyleDeclarations(
-			[
-				'returnType' => $params['returnType'] ?? 'array',
-				'important'  => false,
-			]
-		);
-
-		$force_fullwidth = $params['attrValue'] ?? 'off';
-
-		if ( 'on' === $force_fullwidth ) {
-			$style_declarations->add( 'width', '100%' );
-		}
-
-		return $style_declarations->value();
-	}
-
 	/**
 	 * Style declaration for toggling the featured image visibility in the WooCommerce Product Image module.
 	 *
@@ -554,15 +512,13 @@ class WooCommerceProductImagesModule implements DependencyInterface {
 						[
 							'attrName'   => 'image',
 							'styleProps' => [
+								'background'     => [
+									'selector' => "{$order_class} div.images ol.flex-control-thumbs.flex-control-nav li, {$order_class} .flex-viewport, {$order_class} .woocommerce-product-gallery--without-images .woocommerce-product-gallery__wrapper",
+								],
+								'transform'      => [
+									'selector' => "{$order_class} div.images ol.flex-control-thumbs.flex-control-nav li, {$order_class} .flex-viewport, {$order_class} .woocommerce-product-gallery--without-images .woocommerce-product-gallery__wrapper",
+								],
 								'advancedStyles' => [
-									[
-										'componentName' => 'divi/common',
-										'props'         => [
-											'attr'     => $attrs['image']['advanced']['forceFullwidth'] ?? [],
-											'selector' => "{$args['orderClass']} .woocommerce-product-gallery__image img",
-											'declarationFunction' => [ self::class, 'fullwidth_module_style_declaration' ],
-										],
-									],
 									[
 										'componentName' => 'divi/common',
 										'props'         => [

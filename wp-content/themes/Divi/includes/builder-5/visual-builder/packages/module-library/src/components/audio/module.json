@@ -104,7 +104,7 @@
           "selector": "{{selector}}.et_pb_audio_module"
         },
         "layout": {
-          "selector": "{{selector}} .et_pb_audio_module_content"
+          "selector": "{{selector}}, {{selector}} .et_pb_audio_module_content"
         }
       },
       "styleComponentsProps": {
@@ -311,6 +311,7 @@
       "type": "object",
       "selector": "{{selector}} .et_pb_audio_cover_art",
       "supportsCustomAttributes": true,
+      "elementType": "image",
       "settings": {
         "innerContent": {
           "groupType": "group-item",
@@ -340,57 +341,41 @@
           }
         },
         "decoration": {
-          "border": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "priority": 20,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/border",
-                "props": {
-                  "grouped": true,
-                  "fieldLabel": "Image"
-                }
-              }
-            }
-          },
-          "boxShadow": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "priority": 20,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/box-shadow",
-                "props": {
-                  "grouped": true,
-                  "fieldLabel": "Image"
-                }
-              }
-            }
-          },
-          "filters": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "priority": 20,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/filters",
-                "props": {
-                  "grouped": true,
-                  "fieldLabel": "Image"
-                }
+          "image": {
+            "panel": "design",
+            "groupType": "group",
+            "groupName": "image",
+            "priority": 10,
+            "component": {
+              "type": "group",
+              "name": "divi/image",
+              "props": {
+                "attrName": "image",
+                "groupLabel": "Image",
+                "grouped": true,
+                "dynamicSubgroupHost": true,
+                "presetGroup": "divi/image"
               }
             }
           }
         }
       },
       "styleProps": {
+        "fit": {
+          "selector": "{{selector}} .et_pb_audio_cover_art"
+        },
+        "sizing": {
+          "propertySelectors": {
+            "desktop": {
+              "value": {
+                "aspect-ratio": "{{selector}} .et_pb_audio_cover_art"
+              }
+            }
+          }
+        },
+        "border": {
+          "selector": "{{selector}} .et_pb_audio_cover_art"
+        },
         "boxShadow": {
           "useOverlay": true
         }
@@ -483,22 +468,6 @@
           "name": "divi/composite",
           "props": {
             "groupLabel": "Image"
-          }
-        }
-      },
-      "designImage": {
-        "panel": "design",
-        "priority": 5,
-        "groupName": "imageStyle",
-        "component": {
-          "name": "divi/composite",
-          "props": {
-            "groupLabel": "Image",
-            "dynamicSubgroupHost": true,
-            "dynamicSubgroupExcludedComponents": [
-              "divi/background"
-            ],
-            "clipboardCategory": "style"
           }
         }
       }

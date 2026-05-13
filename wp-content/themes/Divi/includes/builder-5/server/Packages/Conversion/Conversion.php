@@ -2629,6 +2629,12 @@ class Conversion {
 								}
 							} elseif (isset($setting_item['groupType']) && 'group' === $setting_item['groupType']) {
 								$group_name = $setting_item['groupName'] ?? '';
+								$preset_group_name = $setting_item['component']['props']['presetGroup'] ?? '';
+
+								if ( ! empty( $preset_group_name ) ) {
+									$group_name = $preset_group_name;
+								}
+
 								if (empty($group_name)) {
 									$group_name = ModuleOptionsPresetAttrs::get_the_group_name_by_key($attrs_type, $setting_item_key);
 								}
@@ -2639,8 +2645,19 @@ class Conversion {
 									$args['has_heading_level'] = true;
 								}
 
+								$group_attr_name = $full_attr_name;
+
+								/*
+								 * `divi/image` group definitions live under `{attr}.settings.decoration.image`,
+								 * but the actual data path is rooted at the group attrName
+								 * (e.g. `image` / `portrait`) not `{attr}.decoration.image`.
+								 */
+								if ( in_array( $group_name, [ 'divi/image', 'image' ], true ) ) {
+									$group_attr_name = $setting_item['component']['props']['attrName'] ?? $attr_name;
+								}
+
 								// Always get the group-level preset attrs map first to include all default fields (e.g., textShadow).
-								$group_attrs = ModuleOptionsPresetAttrs::get_preset_attrs_from_group($group_name, $full_attr_name, $args);
+								$group_attrs = ModuleOptionsPresetAttrs::get_preset_attrs_from_group($group_name, $group_attr_name, $args);
 								$attrs_map = array_merge($attrs_map, $group_attrs);
 
 								// Process fields in the group individually if they exist.
@@ -3090,6 +3107,8 @@ class Conversion {
 		// Set layout to "block" for modules that support layout when converting from Divi 4.
 		// This is needed because Divi 4 never supported flex layouts, so all converted modules
 		// should default to "block" layout instead of the Divi 5 default "flex".
+		// Person (divi/team-member) is an exception: D4 uses a horizontal image + text layout that
+		// maps to flex row in D5 so inner Team Member style declarations run (see #49701).
 		// IMPORTANT: Skip this for preset conversion to avoid polluting presets with default values.
 		if ( ! $is_preset_conversion ) {
 			$modulesWithLayout = [
@@ -3107,11 +3126,16 @@ class Conversion {
 			];
 
 			// Restore module name for consistent module name handling.
-			$restoredModuleName = self::maybe_restore_preset_module_name($moduleName);
+			$restoredModuleName = self::maybe_restore_preset_module_name( $moduleName );
 
-			if (in_array($restoredModuleName, $modulesWithLayout)) {
-				// Set the layout value to "block".
-				$convertedAttrs['module']['decoration']['layout']['desktop']['value']['display'] = 'block';
+			if ( in_array( $restoredModuleName, $modulesWithLayout, true ) ) {
+				if ( 'divi/team-member' === $restoredModuleName ) {
+					$convertedAttrs['module']['decoration']['layout']['desktop']['value']['display']       = 'flex';
+					$convertedAttrs['module']['decoration']['layout']['desktop']['value']['flexDirection'] = 'row';
+				} else {
+					// Set the layout value to "block".
+					$convertedAttrs['module']['decoration']['layout']['desktop']['value']['display'] = 'block';
+				}
 			}
 		}
 

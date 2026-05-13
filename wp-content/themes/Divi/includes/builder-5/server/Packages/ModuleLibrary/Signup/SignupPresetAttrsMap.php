@@ -162,6 +162,7 @@ class SignupPresetAttrsMap {
 		unset( $map['button.decoration.button.decoration.sizing__size'] );
 		unset( $map['button.decoration.button.decoration.sizing__height'] );
 		unset( $map['button.decoration.button.decoration.sizing__maxHeight'] );
+		unset( $map['button.decoration.button.decoration.sizing__aspectRatio'] );
 		unset( $map['button.decoration.button.decoration.sizing__flexType'] );
 		unset( $map['button.decoration.font.font__lineHeight'] );
 		unset( $map['customFields.advanced.fields'] );

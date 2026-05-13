@@ -9,15 +9,6 @@
       }
     }
   },
-  "image": {
-    "advanced": {
-      "forceFullwidth": {
-        "desktop": {
-          "value": "off"
-        }
-      }
-    }
-  },
   "content": {
     "advanced": {
       "product": {

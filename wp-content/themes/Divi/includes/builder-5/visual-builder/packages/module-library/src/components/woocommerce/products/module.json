@@ -136,74 +136,43 @@
       "type": "object",
       "settings": {
         "decoration": {
-          "border": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "priority": 20,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/border",
-                "props": {
-                  "grouped": true,
-                  "fieldLabel": "Image"
-                }
-              }
-            }
-          },
-          "boxShadow": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "priority": 20,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/box-shadow",
-                "props": {
-                  "grouped": true,
-                  "fieldLabel": "Image"
-                }
-              }
-            }
-          },
-          "spacing": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "attrName": "image.decoration.spacing",
-              "priority": 30,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/spacing",
-                "props": {
-                  "grouped": true,
-                  "fieldLabel": "Image"
-                }
-              }
-            }
-          },
-          "filters": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designImage",
-              "priority": 20,
-              "render": true,
-              "component": {
-                "type": "group",
-                "name": "divi/filters",
-                "props": {
-                  "grouped": true,
-                  "fieldLabel": "Image"
-                }
+          "image": {
+            "panel": "design",
+            "groupType": "group",
+            "groupName": "image",
+            "priority": 20,
+            "component": {
+              "type": "group",
+              "name": "divi/image",
+              "props": {
+                "attrName": "image",
+                "groupLabel": "Image",
+                "grouped": true,
+                "dynamicSubgroupHost": true,
+                "presetGroup": "divi/image"
               }
             }
           }
         }
       },
       "styleProps": {
+        "background": {
+          "selector": "{{selector}}.et_pb_shop .et_shop_image > img, {{selector}}.et_pb_shop .et_shop_image .et_overlay",
+          "important": true
+        },
+        "fit": {
+          "selector": "{{selector}}.et_pb_shop .et_shop_image > img"
+        },
+        "sizing": {
+          "selector": "{{selector}}.et_pb_shop .et_shop_image",
+          "propertySelectors": {
+            "desktop": {
+              "value": {
+                "aspect-ratio": "{{selector}}.et_pb_shop .et_shop_image > img"
+              }
+            }
+          }
+        },
         "border": {
           "propertySelectors": {
             "desktop": {
@@ -1012,19 +981,6 @@
           "name": "divi/composite",
           "props": {
             "groupLabel": "Overlay"
-          }
-        }
-      },
-      "designImage": {
-        "panel": "design",
-        "priority": 15,
-        "groupName": "designImage",
-        "multiElements": true,
-        "component": {
-          "name": "divi/composite",
-          "props": {
-            "groupLabel": "Image",
-            "dynamicSubgroupHost": true
           }
         }
       },

@@ -1250,6 +1250,11 @@ class SocialMediaFollowPresetAttrsMap {
 				'preset'   => [ 'style' ],
 				'subName'  => 'maxHeight',
 			],
+			'button.decoration.sizing__aspectRatio'        => [
+				'attrName' => 'button.decoration.sizing',
+				'preset'   => [ 'style' ],
+				'subName'  => 'aspectRatio',
+			],
 			'button.decoration.sizing__flexType'           => [
 				'attrName' => 'button.decoration.sizing',
 				'preset'   => [ 'html' ],
@@ -1371,6 +1376,13 @@ class SocialMediaFollowPresetAttrsMap {
 					'style',
 				],
 				'subName'  => 'maxHeight',
+			],
+			'module.decoration.sizing__aspectRatio' => [
+				'attrName' => 'module.decoration.sizing',
+				'preset'   => [
+					'style',
+				],
+				'subName'  => 'aspectRatio',
 			],
 			'module.decoration.spacing__margin'            => [
 				'attrName' => 'module.decoration.spacing',

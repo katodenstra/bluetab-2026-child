@@ -63,6 +63,23 @@
       "selector": "{{selector}} .et_pb_before_image img",
       "elementType": "image",
       "supportsCustomAttributes": true,
+      "styleProps": {
+        "selector": "{{selector}} .et_pb_before_image",
+        "fit": {
+          "selector": "{{selector}} .et_pb_before_image img"
+        },
+        "sizing": {
+          "propertySelectors": {
+            "desktop": {
+              "value": {
+                "aspect-ratio": "{{selector}} .et_pb_before_image img",
+                "height": "{{selector}} .et_pb_before_image img",
+                "max-height": "{{selector}} .et_pb_before_image img"
+              }
+            }
+          }
+        }
+      },
       "settings": {
         "innerContent": {
           "groupType": "group-items",
@@ -99,6 +116,25 @@
               }
             }
           }
+        },
+        "decoration": {
+          "image": {
+            "panel": "design",
+            "groupType": "group",
+            "groupName": "image",
+            "priority": 10,
+            "component": {
+              "type": "group",
+              "name": "divi/image",
+              "props": {
+                "attrName": "beforeImage",
+                "groupLabel": "Before Image",
+                "grouped": true,
+                "dynamicSubgroupHost": true,
+                "presetGroup": "divi/image"
+              }
+            }
+          }
         }
       }
     },
@@ -107,6 +143,23 @@
       "selector": "{{selector}} .et_pb_after_image img",
       "elementType": "image",
       "supportsCustomAttributes": true,
+      "styleProps": {
+        "selector": "{{selector}} .et_pb_after_image",
+        "fit": {
+          "selector": "{{selector}} .et_pb_after_image img"
+        },
+        "sizing": {
+          "propertySelectors": {
+            "desktop": {
+              "value": {
+                "aspect-ratio": "{{selector}} .et_pb_after_image img",
+                "height": "{{selector}} .et_pb_after_image img",
+                "max-height": "{{selector}} .et_pb_after_image img"
+              }
+            }
+          }
+        }
+      },
       "settings": {
         "innerContent": {
           "groupType": "group-items",
@@ -140,6 +193,25 @@
                     "titleText": true
                   }
                 }
+              }
+            }
+          }
+        },
+        "decoration": {
+          "image": {
+            "panel": "design",
+            "groupType": "group",
+            "groupName": "image",
+            "priority": 10,
+            "component": {
+              "type": "group",
+              "name": "divi/image",
+              "props": {
+                "attrName": "afterImage",
+                "groupLabel": "After Image",
+                "grouped": true,
+                "dynamicSubgroupHost": true,
+                "presetGroup": "divi/image"
               }
             }
           }

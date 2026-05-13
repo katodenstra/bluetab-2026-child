@@ -619,7 +619,21 @@ class WooCommerceProductReviewsModule implements DependencyInterface {
 					// Image.
 					$elements->style(
 						[
-							'attrName' => 'image',
+							'attrName'   => 'image',
+							'styleProps' => [
+								'fit'    => [
+									'selector' => "{$order_class}.et_pb_wc_reviews #reviews #comments ol.commentlist li img.avatar",
+								],
+								'sizing' => [
+									'propertySelectors' => [
+										'desktop' => [
+											'value' => [
+												'aspect-ratio' => "{$order_class}.et_pb_wc_reviews #reviews #comments ol.commentlist li img.avatar",
+											],
+										],
+									],
+								],
+							],
 						]
 					),
 					// Form Fields.

@@ -609,6 +609,9 @@ class WooCommerceProductUpsellModule implements DependencyInterface {
 						[
 							'attrName'   => 'image',
 							'styleProps' => [
+								'background'     => [
+									'selector' => "{$order_class}.et_pb_module .et_shop_image",
+								],
 								'advancedStyles' => [
 									[
 										'componentName' => 'divi/common',

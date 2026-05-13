@@ -30,7 +30,7 @@
           "important": true
         },
         "layout": {
-          "selector": "{{selector}} .et_pb_toggle_content"
+          "selector": "{{selector}}, {{selector}} .et_pb_toggle_content"
         }
       },
       "settings": {

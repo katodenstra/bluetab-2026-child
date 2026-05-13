@@ -414,22 +414,13 @@
         }
       }
     },
-    "featuredImage": {
+    "image": {
       "type": "object",
       "selector": "{{selector}} .et_pb_title_featured_container img",
       "supportsCustomAttributes": true,
       "styleProps": {
-        "sizing": {
-          "propertySelectors": {
-            "desktop": {
-              "value": {
-                "width": "{{selector}} .et_pb_title_featured_container",
-                "max-width": "{{selector}} .et_pb_title_featured_container",
-                "margin-left": "{{selector}} .et_pb_title_featured_container",
-                "margin-right": "{{selector}} .et_pb_title_featured_container"
-              }
-            }
-          }
+        "layout": {
+          "selector": "{{selector}} .et_pb_image_wrap"
         }
       },
       "settings": {
@@ -448,26 +439,6 @@
                 "preset": [
                   "html"
                 ]
-              },
-              "component": {
-                "type": "field",
-                "name": "divi/toggle"
-              }
-            }
-          },
-          "forceFullwidth": {
-            "groupType": "group-item",
-            "item": {
-              "groupSlug": "designSizing",
-              "priority": 5,
-              "render": true,
-              "label": "Force Fullwidth",
-              "description": "When enabled, this will force your image to extend 100% of the width of the column it's in.",
-              "category": "layout",
-              "features": {
-                "sticky": false,
-                "responsive": false,
-                "hover": false
               },
               "component": {
                 "type": "field",
@@ -513,152 +484,20 @@
           }
         },
         "decoration": {
-          "sizing": {
-            "groupType": "group-items",
-            "items": {
-              "alignment": {
-                "groupSlug": "designImage",
-                "category": "layout",
-                "priority": 5,
-                "render": true,
-                "subName": "alignment",
-                "label": "Image Alignment",
-                "description": "Align image to the left, right or center.",
-                "features": {
-                  "responsive": false,
-                  "hover": false,
-                  "sticky": false
-                },
-                "multipleChoices": false,
-                "component": {
-                  "name": "divi/button-options",
-                  "type": "field",
-                  "props": {
-                    "allowClickToUnset": false,
-                    "options": {
-                      "left": {
-                        "icon": "divi/align-left"
-                      },
-                      "center": {
-                        "icon": "divi/align-center"
-                      },
-                      "right": {
-                        "icon": "divi/align-right"
-                      }
-                    },
-                    "showLabel": false
-                  }
-                }
-              },
-              "width": {
-                "groupSlug": "designSizing",
-                "category": "layout",
-                "priority": 10,
-                "render": true,
-                "subName": "width",
-                "label": "Featured Image Width",
-                "description": "Adjust the width of the featured image.",
-                "features": {
-                  "responsive": false,
-                  "hover": false,
-                  "sticky": false,
-                  "dynamicContent": {
-                    "type": "number"
-                  }
-                },
-                "component": {
-                  "name": "divi/range",
-                  "type": "field",
-                  "props": {
-                    "cssProperty": "width",
-                    "defaultUnit": "%",
-                    "max": 100,
-                    "min": 0,
-                    "step": 1
-                  }
-                }
-              },
-              "maxWidth": {
-                "groupSlug": "designSizing",
-                "category": "layout",
-                "priority": 15,
-                "render": true,
-                "subName": "maxWidth",
-                "label": "Featured Image Max Width",
-                "description": "Adjust the max width of the featured image.",
-                "features": {
-                  "responsive": false,
-                  "hover": false,
-                  "sticky": false,
-                  "dynamicContent": {
-                    "type": "number"
-                  }
-                },
-                "component": {
-                  "name": "divi/range",
-                  "type": "field",
-                  "props": {
-                    "cssProperty": "max-width",
-                    "defaultUnit": "%",
-                    "max": 100,
-                    "min": 0,
-                    "step": 1
-                  }
-                }
-              },
-              "height": {
-                "groupSlug": "designSizing",
-                "category": "layout",
-                "priority": 20,
-                "render": true,
-                "subName": "height",
-                "label": "Featured Image Height",
-                "description": "Adjust the height of the featured image.",
-                "features": {
-                  "responsive": false,
-                  "hover": false,
-                  "sticky": false,
-                  "dynamicContent": {
-                    "type": "number"
-                  }
-                },
-                "component": {
-                  "name": "divi/range",
-                  "type": "field",
-                  "props": {
-                    "cssProperty": "height",
-                    "max": 1000,
-                    "min": 0,
-                    "step": 1
-                  }
-                }
-              },
-              "maxHeight": {
-                "groupSlug": "designSizing",
-                "category": "layout",
-                "priority": 25,
-                "render": true,
-                "subName": "maxHeight",
-                "label": "Featured Image Max Height",
-                "description": "Adjust the max height of the featured image.",
-                "features": {
-                  "responsive": false,
-                  "hover": false,
-                  "sticky": false,
-                  "dynamicContent": {
-                    "type": "number"
-                  }
-                },
-                "component": {
-                  "name": "divi/range",
-                  "type": "field",
-                  "props": {
-                    "cssProperty": "max-height",
-                    "max": 1000,
-                    "min": 0,
-                    "step": 1
-                  }
-                }
+          "image": {
+            "panel": "design",
+            "groupType": "group",
+            "groupName": "image",
+            "priority": 10,
+            "component": {
+              "type": "group",
+              "name": "divi/image",
+              "props": {
+                "attrName": "image",
+                "groupLabel": "Image",
+                "grouped": true,
+                "dynamicSubgroupHost": true,
+                "presetGroup": "divi/image"
               }
             }
           }
@@ -696,20 +535,6 @@
           "props": {
             "groupLabel": "Elements",
             "preset": "content"
-          }
-        }
-      },
-      "designImage": {
-        "panel": "design",
-        "priority": 5,
-        "groupName": "imageStyle",
-        "multiElements": true,
-        "component": {
-          "name": "divi/composite",
-          "props": {
-            "groupLabel": "Image",
-            "clipboardCategory": "style",
-            "dynamicSubgroupHost": true
           }
         }
       },

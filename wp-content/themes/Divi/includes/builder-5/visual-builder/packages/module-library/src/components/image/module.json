@@ -382,12 +382,16 @@
           }
         },
         "decoration": {
+          "fit": {},
           "border": {},
           "boxShadow": {}
         }
       },
       "styleProps": {
         "selector": "{{selector}} img, {{selector}} .et_overlay",
+        "fit": {
+          "selector": "{{selector}} .et_pb_image_wrap img"
+        },
         "border": {
           "selector": "{{selector}} .et_pb_image_wrap"
         },

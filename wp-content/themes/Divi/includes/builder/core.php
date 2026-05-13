@@ -2095,7 +2095,7 @@ if ( ! function_exists( 'et_builder_finish_oauth2_authorization' ) ) :
 	 *
 	 * @since 4.9.0
 	 *
-	 * @throws Exception If the Provider or Account not exists.
+	 * @throws \Exception If the Provider or Account not exists.
 	 *
 	 * @return void
 	 */
@@ -2105,17 +2105,27 @@ if ( ! function_exists( 'et_builder_finish_oauth2_authorization' ) ) :
 		}
 
 		if ( ! isset( $_GET['state'] ) || 0 !== strpos( $_GET['state'], 'ET_Core' ) ) { // phpcs:ignore ET.Sniffs.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.NonceVerification.Recommended -- logic for nonce checks are following
-			return;
+			// Output error message if state is missing or invalid.
+			?>
+			<script type="text/javascript">
+				if (window.opener) {
+					window.opener.postMessage({ authenticated: 0, error: 'Invalid or missing state parameter.' }, window.opener.location);
+				}
+			</script>
+			<?php
+			exit();
 		}
 
 		$authenticated = false;
+		$error_message = '';
 		try {
 			et_core_nonce_verified_previously();
 
 			list( $_, $name, $account, $nonce ) = explode( '|', sanitize_text_field( rawurldecode( $_GET['state'] ) ) ); // @phpcs:ignore ET.Sniffs.ValidatedSanitizedInput.InputNotSanitized -- Sanitized with sanitize_text_field
 
 			if ( ! $name || ! $account || ! $nonce ) {
-				return;
+				$error_message = __( 'Invalid state parameter.', 'et_builder' );
+				throw new \Exception( $error_message );
 			}
 
 			$_GET['nonce'] = $nonce;
@@ -2124,26 +2134,63 @@ if ( ! function_exists( 'et_builder_finish_oauth2_authorization' ) ) :
 
 			$providers = ET_Core_API_Email_Providers::instance();
 			if ( ! $providers->account_exists( $name, $account ) ) {
-				throw new Exception( __( 'Account not exists.', 'et_builder' ) );
+				$error_message = sprintf( __( 'Account "%s" does not exist. Please create the account first.', 'et_builder' ), $account );
+				throw new \Exception( $error_message );
 			}
 
 			$provider = $providers->get( $name, $account, 'builder' );
 			if ( ! $provider ) {
-				throw new Exception( __( 'Email provider not exists.', 'et_builder' ) );
+				$error_message = sprintf( __( 'Email provider "%s" not found.', 'et_builder' ), $name );
+				throw new \Exception( $error_message );
 			}
 
 			$authenticated = $provider->is_authenticated();
 			if ( ! $authenticated ) {
+				// v3 API uses Authorization Code Flow - code is in query parameter.
 				$authenticated = $provider->authenticate();
+				if ( false === $authenticated ) {
+					$error_message = __( 'Failed to exchange authorization code for access token.', 'et_builder' );
+					throw new \Exception( $error_message );
+				}
 			}
-		} catch ( Exception $err ) {
+
+			// After successful authentication, fetch subscriber lists.
+			if ( true === $authenticated ) {
+				$result = $provider->fetch_subscriber_lists();
+				if ( 'success' !== $result && ! is_array( $result ) ) {
+					$error_message = is_string( $result ) ? $result : __( 'Failed to fetch subscriber lists.', 'et_builder' );
+
+					throw new \Exception( $error_message );
+				}
+			}
+		} catch ( \Exception $err ) {
 			$authenticated = false;
+			$error_message = $err->getMessage();
 		}
+
 		?>
 		<script type="text/javascript">
 			// Send a message to the window opener to close this window and process further.
+			// v3 API uses Authorization Code Flow - code is already in query parameter, no fragment extraction needed.
+			<?php if ( ! empty( $error_message ) ) : ?>
+			// Log error to console for debugging.
+			console.error('Constant Contact OAuth Error:', <?php echo wp_json_encode( $error_message ); ?>);
+			alert(<?php echo wp_json_encode( $error_message ); ?>);
+			<?php else : ?>
+			document.write('<p><?php echo esc_js( $authenticated ? __( 'Authorization successful! This window will close automatically in 5 seconds.', 'et_builder' ) : __( 'Authorization failed. Please try again. This window will close automatically in 5 seconds.', 'et_builder' ) ); ?></p>');
+			<?php endif; ?>
+
 			if (window.opener) {
-				window.opener.postMessage({ authenticated: <?php echo $authenticated ? 1 : 0; ?> }, window.opener.location);
+				window.opener.postMessage({
+					authenticated: <?php echo $authenticated ? 1 : 0; ?>,
+					<?php if ( ! empty( $error_message ) ) : ?>
+					error: <?php echo wp_json_encode( $error_message ); ?>
+					<?php endif; ?>
+				}, window.opener.location);
+				// Close the popup window after sending message.
+				setTimeout(function() {
+					window.close();
+				}, 5000);
 			}
 		</script>
 		<?php
@@ -2474,7 +2521,7 @@ if ( ! function_exists( 'et_pb_submit_subscribe_form' ) ) :
 			$result = array( 'success' => true );
 		} else {
 			$message = esc_html__( 'Subscription Error: ', 'et_builder' );
-			$result  = array( 'error' => $message . $result );
+			$result  = array( 'error' => $message . ( empty( $result ) ? 'An error occurred while subscribing to the list.' : $result ) );
 		}
 
 		die( wp_json_encode( $result ) );

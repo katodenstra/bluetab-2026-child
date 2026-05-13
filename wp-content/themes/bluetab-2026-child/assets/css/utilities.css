@@ -20,6 +20,11 @@
     margin: 0;
 }
 
+.bt-list-orange-discs li::marker {
+    color: var(--bt-color-accent-orange);
+    line-height: 1.75em;
+}
+
 .bt-text-center {
     text-align: center;
 }

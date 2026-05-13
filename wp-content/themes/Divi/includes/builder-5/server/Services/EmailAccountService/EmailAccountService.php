@@ -229,7 +229,7 @@ class EmailAccountService {
 	 * @param string $account  The account ID.
 	 * @param array  $data     The account data.
 	 *
-	 * @return array Returns the email service providers definition.
+	 * @return array Returns the email service providers definition. If OAuth redirect is needed, includes 'redirect_url' key.
 	 */
 	public static function create_account( string $provider, string $account, array $data ): array {
 		if ( self::validate_account_data( $provider, $account, $data ) ) {
@@ -246,7 +246,18 @@ class EmailAccountService {
 					$provider_class->set_account_name( $account );
 				}
 
-				$provider_class->fetch_subscriber_lists();
+				// Save account data before initiating OAuth flow so it exists when callback returns.
+				$provider_class->save_data();
+
+				$result = $provider_class->fetch_subscriber_lists();
+
+				// If fetch_subscriber_lists returns an array with redirect_url, it means OAuth authorization is needed.
+				if ( is_array( $result ) && isset( $result['redirect_url'] ) ) {
+					$definition                 = self::definition();
+					$definition['redirect_url'] = $result['redirect_url'];
+
+					return $definition;
+				}
 			}
 		}
 

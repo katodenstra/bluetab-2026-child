@@ -38,6 +38,7 @@ use ET\Builder\Packages\Module\Options\Meta\MetaPresetAttrsMap;
 use ET\Builder\Packages\Module\Options\Attributes\AttributesPresetAttrsMap;
 use ET\Builder\Packages\Module\Options\AttributesRel\AttributesRelPresetAttrsMap;
 use ET\Builder\Packages\Module\Options\FormField\FormFieldPresetAttrsMap;
+use ET\Builder\Packages\Module\Options\Fit\FitPresetAttrsMap;
 use ET\Builder\Packages\Module\Options\ScrollSettings\ScrollSettingsPresetAttrsMap;
 use ET\Builder\Packages\Module\Options\PositionSettings\PositionSettingsPresetAttrsMap;
 use ET\Builder\Packages\Module\Options\VisibilitySettings\VisibilitySettingsPresetAttrsMap;
@@ -46,6 +47,7 @@ use ET\Builder\Packages\Module\Options\SpamProtection\SpamProtectionPresetAttrsM
 use ET\Builder\Packages\Module\Options\EmailService\EmailServicePresetAttrsMap;
 use ET\Builder\Packages\Module\Options\Gutter\GutterPresetAttrsMap;
 use ET\Builder\Packages\Module\Options\Interactions\InteractionsPresetAttrsMap;
+use ET\Builder\Packages\Module\Options\Image\ImagePresetAttrsMap;
 use ET\Builder\Packages\Module\Options\Layout\LayoutPresetAttrsMap;
 use ET\Builder\Packages\Module\Options\Loop\LoopPresetAttrsMap;
 use ET\Builder\Packages\Module\Options\Html\HtmlPresetAttrsMap;
@@ -98,6 +100,8 @@ class ModuleOptionsPresetAttrs {
 				return DisabledOnPresetAttrsMap::get_map( $attr_name );
 			case 'divi/filters':
 				return FiltersPresetAttrsMap::get_map( $attr_name );
+			case 'divi/fit':
+				return FitPresetAttrsMap::get_map( $attr_name );
 			case 'divi/icon':
 				return IconPresetAttrsMap::get_map( $attr_name );
 			case 'divi/overflow':
@@ -136,6 +140,8 @@ class ModuleOptionsPresetAttrs {
 				return AttributesRelPresetAttrsMap::get_map( $attr_name );
 			case 'divi/form-field':
 				return FormFieldPresetAttrsMap::get_map( $attr_name );
+			case 'divi/image':
+				return ImagePresetAttrsMap::get_map( $attr_name );
 			case 'divi/scroll-settings':
 				return ScrollSettingsPresetAttrsMap::get_map( $attr_name );
 			case 'divi/position-settings':
@@ -160,6 +166,8 @@ class ModuleOptionsPresetAttrs {
 				return HtmlPresetAttrsMap::get_map( $attr_name );
 			case 'divi/elements':
 				return Elements\ElementsPresetAttrsMap::get_map( $attr_name );
+			case 'image':
+				return ImagePresetAttrsMap::get_map( $attr_name );
 			default:
 				return [];
 		}
@@ -198,6 +206,10 @@ class ModuleOptionsPresetAttrs {
 					return 'divi/disabled-on';
 				case 'filters':
 					return 'divi/filters';
+				case 'fit':
+					return 'divi/fit';
+				case 'image':
+					return 'divi/image';
 				case 'interactions':
 					return 'divi/interactions';
 				case 'layout':

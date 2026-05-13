@@ -8,10 +8,11 @@
 
 namespace ET\Builder\Packages\ModuleLibrary\Menu;
 
-if (!defined('ABSPATH')) {
-	die('Direct access forbidden.');
+if ( ! defined( 'ABSPATH' ) ) {
+	die( 'Direct access forbidden.' );
 }
 
+use ET\Builder\Packages\ModuleLibrary\Menu\MenuUtils;
 use ET\Builder\Framework\Utility\HTMLUtility;
 
 /**
@@ -19,8 +20,7 @@ use ET\Builder\Framework\Utility\HTMLUtility;
  *
  * @since ??
  */
-class MenuUtils
-{
+class MenuUtils {
 
 	/**
 	 * Render Menu HTML.
@@ -36,35 +36,34 @@ class MenuUtils
 	 *
 	 * @return string The Menu HTML.
 	 */
-	public static function render_menu(array $args): string
-	{
+	public static function render_menu( array $args ): string {
 		$menu_dropdown_direction = $args['menuDropdownDirection'] ?? '';
-		$menu_id = $args['menuId'] ?? '';
+		$menu_id                 = $args['menuId'] ?? '';
 
 		// Modify the menu item to include the required data.
-		add_filter('wp_setup_nav_menu_item', [self::class, 'modify_menu_item']);
+		add_filter( 'wp_setup_nav_menu_item', [ self::class, 'modify_menu_item' ] );
 
 		$menu_class = 'et-menu nav';
 
 		// The divi_disable_toptier option available in Divi theme only.
-		if (!et_is_builder_plugin_active() && 'on' === et_get_option('divi_disable_toptier')) {
+		if ( ! et_is_builder_plugin_active() && 'on' === et_get_option( 'divi_disable_toptier' ) ) {
 			$menu_class .= ' et_disable_top_tier';
 		}
 
-		if ('' !== $menu_dropdown_direction) {
+		if ( '' !== $menu_dropdown_direction ) {
 			$menu_class .= ' ' . $menu_dropdown_direction;
 		}
 
 		$menu_args = [
 			'theme_location' => '',
-			'container' => '',
-			'fallback_cb' => '',
-			'menu_class' => $menu_class,
-			'menu_id' => '',
-			'echo' => false,
+			'container'      => '',
+			'fallback_cb'    => '',
+			'menu_class'     => $menu_class,
+			'menu_id'        => '',
+			'echo'           => false,
 		];
 
-		if ('' !== $menu_id) {
+		if ( '' !== $menu_id ) {
 			$menu_args['menu'] = (int) $menu_id;
 		} else {
 			// When menu ID is not preset, let's use the primary menu.
@@ -82,23 +81,23 @@ class MenuUtils
 		 *
 		 * @param array $menu_args The menu arguments to be filtered.
 		 */
-		$primary_nav = wp_nav_menu(apply_filters('divi_menu_args', $menu_args));
+		$primary_nav = wp_nav_menu( apply_filters( 'divi_menu_args', $menu_args ) );
 
-		if (empty($primary_nav)) {
-			$primary_nav_item_home = !et_is_builder_plugin_active() && 'on' === et_get_option('divi_home_link') ? HTMLUtility::render(
+		if ( empty( $primary_nav ) ) {
+			$primary_nav_item_home = ! et_is_builder_plugin_active() && 'on' === et_get_option( 'divi_home_link' ) ? HTMLUtility::render(
 				[
-					'tag' => 'li',
-					'attributes' => [
+					'tag'               => 'li',
+					'attributes'        => [
 						'class' => is_home() ? 'current_page_item' : null,
 					],
 					'childrenSanitizer' => 'et_core_esc_previously',
-					'children' => HTMLUtility::render(
+					'children'          => HTMLUtility::render(
 						[
-							'tag' => 'a',
+							'tag'        => 'a',
 							'attributes' => [
-								'href' => home_url('/'),
+								'href' => home_url( '/' ),
 							],
-							'children' => __('Home', 'et_builder_5'),
+							'children'   => __( 'Home', 'et_builder_5' ),
 						]
 					),
 				]
@@ -106,21 +105,21 @@ class MenuUtils
 
 			ob_start();
 
-			if (et_is_builder_plugin_active()) {
+			if ( et_is_builder_plugin_active() ) {
 				wp_page_menu();
 			} else {
-				show_page_menu($menu_class, false, false);
-				show_categories_menu($menu_class, false);
+				show_page_menu( $menu_class, false, false );
+				show_categories_menu( $menu_class, false );
 			}
 
 			$primary_nav = HTMLUtility::render(
 				[
-					'tag' => 'ul',
-					'attributes' => [
+					'tag'               => 'ul',
+					'attributes'        => [
 						'class' => $menu_class,
 					],
 					'childrenSanitizer' => 'et_core_esc_previously',
-					'children' => [
+					'children'          => [
 						$primary_nav_item_home,
 						ob_get_contents(),
 					],
@@ -132,16 +131,16 @@ class MenuUtils
 
 		$menu = HTMLUtility::render(
 			[
-				'tag' => 'nav',
-				'attributes' => [
+				'tag'               => 'nav',
+				'attributes'        => [
 					'class' => 'et-menu-nav',
 				],
 				'childrenSanitizer' => 'et_core_esc_previously',
-				'children' => $primary_nav,
+				'children'          => $primary_nav,
 			]
 		);
 
-		remove_filter('wp_setup_nav_menu_item', [self::class, 'modify_menu_item']);
+		remove_filter( 'wp_setup_nav_menu_item', [ self::class, 'modify_menu_item' ] );
 
 		return $menu;
 	}
@@ -155,12 +154,11 @@ class MenuUtils
 	 *
 	 * @return object The Menu Item Object.
 	 */
-	public static function modify_menu_item($menu_item)
-	{
+	public static function modify_menu_item( $menu_item ) {
 		// Since PHP 7.1 silent conversion to array is no longer supported.
 		$menu_item->classes = (array) $menu_item->classes;
 
-		if (esc_url(home_url('/')) === $menu_item->url) {
+		if ( esc_url( home_url( '/' ) ) === $menu_item->url ) {
 			$fw_menu_custom_class = 'et_pb_menu_page_id-home';
 		} else {
 			$fw_menu_custom_class = 'et_pb_menu_page_id-' . $menu_item->object_id;

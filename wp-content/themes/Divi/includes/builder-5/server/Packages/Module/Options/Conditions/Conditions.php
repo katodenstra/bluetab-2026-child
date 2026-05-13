@@ -387,6 +387,362 @@ class Conditions {
 	}
 
 	/**
+	 * Processes "Product Purchase" display condition (WooCommerce).
+	 *
+	 * @since ??
+	 *
+	 * @param array $condition_settings Condition settings payload.
+	 *
+	 * @return bool
+	 */
+	protected function _process_product_purchase_condition( array $condition_settings ): bool {
+		if ( ! class_exists( 'WooCommerce' ) ) {
+			return false;
+		}
+
+		$order_received_order = $this->_get_valid_order_received_order_for_product_purchase();
+		$logged_in            = is_user_logged_in();
+		$current_user         = wp_get_current_user();
+
+		// Guests have no customer_id for wc_get_orders / wc_customer_bought_product unless we use the
+		// order-received page (thank you) where the order key proves access to that purchase.
+		if ( ! $logged_in && ! $order_received_order ) {
+			return false;
+		}
+
+		$legacy_display_rule = isset( $condition_settings['productPurchaseDisplay'] ) ? $condition_settings['productPurchaseDisplay'] : 'hasBoughtProduct';
+		$display_rule        = isset( $condition_settings['displayRule'] ) ? $condition_settings['displayRule'] : $legacy_display_rule;
+		$products_raw        = isset( $condition_settings['products'] ) ? $condition_settings['products'] : [];
+		$products_ids        = array_values(
+			array_filter(
+				array_map(
+					function ( $item ) {
+						return isset( $item['value'] ) ? $item['value'] : '';
+					},
+					$products_raw
+				)
+			)
+		);
+
+		switch ( $display_rule ) {
+			case 'hasBoughtProduct':
+				if ( $order_received_order && $this->_wc_order_is_paid_for_product_purchase_condition( $order_received_order ) ) {
+					return true;
+				}
+				if ( $logged_in ) {
+					return $this->_has_user_bought_any_product( (int) $current_user->ID );
+				}
+				return false;
+
+			case 'hasNotBoughtProduct':
+				if ( $order_received_order && $this->_wc_order_is_paid_for_product_purchase_condition( $order_received_order ) ) {
+					return false;
+				}
+				if ( $logged_in ) {
+					return ! $this->_has_user_bought_any_product( (int) $current_user->ID );
+				}
+				return false;
+
+			case 'hasBoughtSpecificProduct':
+				if ( count( $products_ids ) === 0 ) {
+					return false;
+				}
+				if ( $order_received_order && $this->_wc_order_is_paid_for_product_purchase_condition( $order_received_order ) ) {
+					return $this->_order_contains_any_product_ids_for_product_purchase( $order_received_order, $products_ids );
+				}
+				if ( $logged_in ) {
+					return $this->_has_user_bought_specific_product( $current_user, $products_ids );
+				}
+				return false;
+
+			case 'hasNotBoughtSpecificProduct':
+				if ( count( $products_ids ) === 0 ) {
+					return false;
+				}
+				if ( $order_received_order && $this->_wc_order_is_paid_for_product_purchase_condition( $order_received_order ) ) {
+					return ! $this->_order_contains_any_product_ids_for_product_purchase( $order_received_order, $products_ids );
+				}
+				if ( $logged_in ) {
+					return ! $this->_has_user_bought_specific_product( $current_user, $products_ids );
+				}
+				return false;
+
+			default:
+				return false;
+		}
+	}
+
+	/**
+	 * Whether the user has bought any of the given product IDs.
+	 *
+	 * @since ??
+	 *
+	 * @param \WP_User $current_user Current user.
+	 * @param array    $products_ids Product or variation IDs.
+	 *
+	 * @return bool
+	 */
+	protected function _has_user_bought_specific_product( $current_user, array $products_ids ): bool {
+		$has_bought_specific_product = false;
+
+		foreach ( $products_ids as $product_id ) {
+			$has_bought_specific_product = wc_customer_bought_product( $current_user->user_email, $current_user->ID, $product_id );
+			if ( $has_bought_specific_product ) {
+				break;
+			}
+		}
+
+		return $has_bought_specific_product;
+	}
+
+	/**
+	 * Whether the user has any paid WooCommerce order.
+	 *
+	 * @since ??
+	 *
+	 * @param int $user_id User ID.
+	 *
+	 * @return bool
+	 */
+	protected function _has_user_bought_any_product( int $user_id ): bool {
+		if ( ! class_exists( 'WooCommerce' ) || ! $user_id || ! is_numeric( $user_id ) ) {
+			return false;
+		}
+
+		$paid_statuses = wc_get_is_paid_statuses();
+
+		$orders = wc_get_orders(
+			[
+				'limit'       => 1,
+				'status'      => $paid_statuses,
+				'customer_id' => (int) $user_id,
+				'return'      => 'ids',
+			]
+		);
+
+		return count( $orders ) > 0 ? true : false;
+	}
+
+	/**
+	 * Loads the current order on the order-received (thank you) page when the URL order key is valid.
+	 *
+	 * Used so guest checkouts can satisfy Product Purchase conditions immediately after purchase.
+	 *
+	 * @since ??
+	 *
+	 * @return \WC_Order|null
+	 */
+	protected function _get_valid_order_received_order_for_product_purchase() {
+		if ( ! function_exists( 'is_order_received_page' ) || ! is_order_received_page() ) {
+			return null;
+		}
+
+		$order_id = 0;
+		if ( function_exists( 'wc_get_order_id_from_url' ) ) {
+			$order_id = absint( wc_get_order_id_from_url() );
+		} else {
+			$order_id = absint( get_query_var( 'order-received' ) );
+		}
+
+		if ( ! $order_id ) {
+			return null;
+		}
+
+		$order = wc_get_order( $order_id );
+		if ( ! $order instanceof \WC_Order ) {
+			return null;
+		}
+
+		$order_key = isset( $_GET['key'] ) ? sanitize_text_field( wp_unslash( $_GET['key'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WooCommerce thank-you URL order key, not a WP nonce; validated by WC_Order::key_is_valid().
+		if ( empty( $order_key ) || ! $order->key_is_valid( $order_key ) ) {
+			return null;
+		}
+
+		return $order;
+	}
+
+	/**
+	 * Whether the order is in a paid state for display-condition purposes.
+	 *
+	 * @since ??
+	 *
+	 * @param \WC_Order $order Order.
+	 *
+	 * @return bool
+	 */
+	protected function _wc_order_is_paid_for_product_purchase_condition( \WC_Order $order ): bool {
+		if ( method_exists( $order, 'is_paid' ) ) {
+			return $order->is_paid();
+		}
+
+		return in_array( $order->get_status(), wc_get_is_paid_statuses(), true );
+	}
+
+	/**
+	 * Whether the order contains any of the given product or variation IDs.
+	 *
+	 * @since ??
+	 *
+	 * @param \WC_Order $order        Order.
+	 * @param array     $products_ids Product or variation IDs from condition settings.
+	 *
+	 * @return bool
+	 */
+	protected function _order_contains_any_product_ids_for_product_purchase( \WC_Order $order, array $products_ids ): bool {
+		$ids_lookup = array_flip( array_map( 'strval', $products_ids ) );
+
+		foreach ( $order->get_items() as $item ) {
+			if ( ! is_object( $item ) || ! is_callable( [ $item, 'get_product_id' ] ) ) {
+				continue;
+			}
+
+			$product_id   = (string) $item->get_product_id();
+			$variation_id = (string) $item->get_variation_id();
+
+			if ( isset( $ids_lookup[ $product_id ] ) ) {
+				return true;
+			}
+
+			if ( '' !== $variation_id && isset( $ids_lookup[ $variation_id ] ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Processes "Cart Contents" display condition (WooCommerce).
+	 *
+	 * @since ??
+	 *
+	 * @param array $condition_settings Condition settings payload.
+	 *
+	 * @return bool
+	 */
+	protected function _process_cart_contents_condition( array $condition_settings ): bool {
+		if ( ! class_exists( 'WooCommerce' ) ) {
+			return false;
+		}
+
+		$cart = WC()->cart;
+		if ( ! ( $cart instanceof \WC_Cart ) ) {
+			return false;
+		}
+
+		$legacy_display_rule = isset( $condition_settings['cartContentsDisplay'] ) ? $condition_settings['cartContentsDisplay'] : 'hasProducts';
+		$display_rule        = isset( $condition_settings['displayRule'] ) ? $condition_settings['displayRule'] : $legacy_display_rule;
+		$products_raw        = isset( $condition_settings['products'] ) ? $condition_settings['products'] : [];
+		$products_ids        = array_values(
+			array_filter(
+				array_map(
+					function ( $item ) {
+						return isset( $item['value'] ) ? $item['value'] : '';
+					},
+					$products_raw
+				)
+			)
+		);
+		$is_cart_empty       = $cart->is_empty();
+
+		switch ( $display_rule ) {
+			case 'hasProducts':
+				return ! $is_cart_empty;
+
+			case 'isEmpty':
+				return $is_cart_empty;
+
+			case 'hasSpecificProduct':
+				if ( count( $products_ids ) === 0 ) {
+					return false;
+				}
+				return $this->_has_specific_product_in_cart( $cart, $products_ids );
+
+			case 'doesNotHaveSpecificProduct':
+				if ( count( $products_ids ) === 0 ) {
+					return false;
+				}
+				return ! $this->_has_specific_product_in_cart( $cart, $products_ids );
+
+			default:
+				return false;
+		}
+	}
+
+	/**
+	 * Whether the cart contains any of the given product or variation IDs.
+	 *
+	 * @since ??
+	 *
+	 * @param \WC_Cart $cart          WooCommerce cart instance.
+	 * @param array    $products_ids Product IDs.
+	 *
+	 * @return bool
+	 */
+	protected function _has_specific_product_in_cart( \WC_Cart $cart, array $products_ids ): bool {
+		$has_specific_product = false;
+
+		if ( ! $cart->is_empty() ) {
+			foreach ( $cart->get_cart() as $cart_item ) {
+				$cart_item_ids = [ $cart_item['product_id'], $cart_item['variation_id'] ];
+				if ( array_intersect( $products_ids, $cart_item_ids ) ) {
+					$has_specific_product = true;
+					break;
+				}
+			}
+		}
+
+		return $has_specific_product;
+	}
+
+	/**
+	 * Processes "Product Stock" display condition (WooCommerce).
+	 *
+	 * @since ??
+	 *
+	 * @param array $condition_settings Condition settings payload.
+	 *
+	 * @return bool
+	 */
+	protected function _process_product_stock_condition( array $condition_settings ): bool {
+		if ( ! class_exists( 'WooCommerce' ) ) {
+			return false;
+		}
+
+		$display_rule = isset( $condition_settings['displayRule'] ) ? $condition_settings['displayRule'] : 'isInStock';
+		$products_raw = isset( $condition_settings['products'] ) ? $condition_settings['products'] : [];
+		$products_ids = array_map(
+			function ( $item ) {
+				return isset( $item['value'] ) ? (int) $item['value'] : 0;
+			},
+			$products_raw
+		);
+		$products_ids = array_values( array_filter( $products_ids ) );
+
+		// Empty `include` would make wc_get_products match all products (unbounded query).
+		if ( count( $products_ids ) === 0 ) {
+			return false;
+		}
+
+		// One matching product is enough: non-empty means at least one selected ID is in stock; empty means none are.
+		$products = wc_get_products(
+			[
+				'limit'        => 1,
+				'include'      => $products_ids,
+				'stock_status' => 'instock',
+				'return'       => 'ids',
+			]
+		);
+
+		$output = [
+			'isInStock'    => count( $products ) > 0,
+			'isOutOfStock' => count( $products ) === 0,
+		];
+
+		return isset( $output[ $display_rule ] ) ? $output[ $display_rule ] : false;
+	}
+
+	/**
 	 * Evaluates "Custom Field" condition.
 	 *
 	 * This function takes the condition settings for custom field condition and determines
@@ -1323,6 +1679,15 @@ class Conditions {
 
 			case 'cookie':
 				return $this->_process_cookie_condition( $condition_settings );
+
+			case 'productPurchase':
+				return $this->_process_product_purchase_condition( $condition_settings );
+
+			case 'cartContents':
+				return $this->_process_cart_contents_condition( $condition_settings );
+
+			case 'productStock':
+				return $this->_process_product_stock_condition( $condition_settings );
 
 			default:
 				/**

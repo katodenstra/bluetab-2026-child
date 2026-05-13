@@ -12,6 +12,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	die( 'Direct access forbidden.' );
 }
 
+use ET\Builder\Packages\Module\Options\Border\BorderPresetAttrsMap;
+use ET\Builder\Packages\Module\Options\BoxShadow\BoxShadowPresetAttrsMap;
+use ET\Builder\Packages\Module\Options\Filters\FiltersPresetAttrsMap;
+use ET\Builder\Packages\Module\Options\Fit\FitPresetAttrsMap;
+use ET\Builder\Packages\Module\Options\Sizing\SizingPresetAttrsMap;
+
 
 /**
  * Class TeamMemberPresetAttrsMap
@@ -38,6 +44,13 @@ class TeamMemberPresetAttrsMap {
 
 		unset( $map['social.decoration.icon__style_html'] );
 
-		return $map;
+		return array_merge(
+			$map,
+			SizingPresetAttrsMap::get_map( 'image.decoration.sizing' ),
+			BorderPresetAttrsMap::get_map( 'image.decoration.border' ),
+			BoxShadowPresetAttrsMap::get_map( 'image.decoration.boxShadow' ),
+			FitPresetAttrsMap::get_map( 'image.decoration.fit' ),
+			FiltersPresetAttrsMap::get_map( 'image.decoration.filters' )
+		);
 	}
 }

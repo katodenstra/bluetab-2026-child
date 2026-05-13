@@ -483,8 +483,7 @@ class FlexboxMigration extends MigrationContentBase {
 
 			if ( $changes_made ) {
 				// Serialize the flat objects back into the content.
-				$blocks      = MigrationUtils::flat_objects_to_blocks( $flat_objects );
-				$new_content = MigrationUtils::serialize_blocks( $blocks );
+				$new_content = MigrationUtils::serialize_flat_objects( $flat_objects );
 			} else {
 				$new_content = $content;
 			}
@@ -510,7 +509,7 @@ class FlexboxMigration extends MigrationContentBase {
 		$clean_content = preg_replace( '/<!-- wp:divi\/shortcode-module.*?<!-- \/wp:divi\/shortcode-module -->/s', '', $content );
 
 		// Check if content starts with shortcodes that need migration.
-		if ( 0 !== strpos( $clean_content, '[et_pb_' ) ) {
+		if ( ! str_starts_with( $clean_content, '[et_pb_' ) ) {
 			return $content;
 		}
 
