@@ -21,6 +21,10 @@
             if (typeof window.initBluetabCards === 'function') {
                 window.initBluetabCards();
             }
+
+            if (typeof window.initBluetabHistoryTimeline === 'function') {
+                window.initBluetabHistoryTimeline();
+            }
         },
 
         initExternalLinks() {

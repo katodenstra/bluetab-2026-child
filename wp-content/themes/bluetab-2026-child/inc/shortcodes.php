@@ -122,12 +122,16 @@ function bluetab_solution_hero_shortcode($atts)
         'variant' => 'strategy',
         'title' => '',
         'text' => '',
+        'logo' => '',
+        'logo_alt' => '',
         'heading_level' => 1,
         'show_wave' => 'true',
     ], $atts, 'bt_solution_hero');
 
     $title = trim($atts['title']);
     $text = trim($atts['text']);
+    $logo = trim($atts['logo']);
+    $logo_alt = trim($atts['logo_alt']);
     $heading_level = absint($atts['heading_level']);
 
     if ($heading_level < 1 || $heading_level > 2) {
@@ -139,23 +143,29 @@ function bluetab_solution_hero_shortcode($atts)
     $show_wave = filter_var($atts['show_wave'], FILTER_VALIDATE_BOOLEAN);
     $title_id = 'bt-solution-hero-title-' . wp_rand(1000, 9999);
 
-    if ($title === '' && $text === '') {
+    if ($title === '' && $text === '' && $logo === '') {
         return '';
     }
 
     ob_start();
     ?>
-    <section class="bt-solution-hero <?php echo esc_attr($variant_config['page_class']); ?>" <?php echo $title !== '' ? 'aria-labelledby="' . esc_attr($title_id) . '"' : ''; ?>>
+    <section class="bt-solution-hero <?php echo esc_attr($variant_config['page_class']); ?>" <?php echo ($title !== '' || $logo !== '') ? 'aria-labelledby="' . esc_attr($title_id) . '"' : ''; ?>>
         <?php if ($show_wave): ?>
             <?php echo bluetab_solution_wave_markup($atts['variant']); ?>
         <?php endif; ?>
 
         <div class="bt-solution-hero__inner">
             <div class="bt-solution-hero__content">
-                <?php if ($title !== ''): ?>
-                    <<?php echo esc_html($heading_tag); ?> id="<?php echo esc_attr($title_id); ?>" class="bt-type-h2
-                bt-solution-hero__title">
-                        <?php echo esc_html($title); ?>
+                <?php if ($title !== '' || $logo !== ''): ?>
+                    <<?php echo esc_html($heading_tag); ?> id="<?php echo esc_attr($title_id); ?>" class="bt-type-h2 bt-solution-hero__title <?php echo $logo !== '' ? 'bt-solution-hero__title--logo' : ''; ?>">
+                        <?php if ($logo !== ''): ?>
+                            <?php if ($title !== ''): ?>
+                                <span class="bt-sr-only"><?php echo esc_html($title); ?></span>
+                            <?php endif; ?>
+                            <img class="bt-solution-hero__logo" src="<?php echo esc_url($logo); ?>" alt="<?php echo esc_attr($logo_alt !== '' ? $logo_alt : $title); ?>" loading="eager">
+                        <?php else: ?>
+                            <?php echo esc_html($title); ?>
+                        <?php endif; ?>
                     </<?php echo esc_html($heading_tag); ?>>
                 <?php endif; ?>
 
@@ -283,6 +293,241 @@ function bluetab_get_theme_asset_url_if_exists($relative_path)
     }
 
     return get_stylesheet_directory_uri() . '/' . $relative_path;
+}
+
+function bluetab_get_history_timeline_fallback_items()
+{
+    return [
+        [
+            'year' => '2005',
+            'title' => 'Nace Bluetab',
+            'text' => 'Bluetab inicia su historia con una visión clara: construir soluciones de datos sólidas, útiles y orientadas a negocio.',
+            'image' => '',
+            'image_alt' => '',
+        ],
+        [
+            'year' => '2008',
+            'title' => 'Primeros grandes proyectos',
+            'text' => 'El equipo consolida una forma de trabajar cercana, técnica y pragmática junto a clientes que necesitaban escalar sus capacidades de datos.',
+            'image' => '',
+            'image_alt' => '',
+        ],
+        [
+            'year' => '2010',
+            'title' => 'Especialización en datos',
+            'text' => 'Bluetab refuerza su foco en arquitecturas, gobierno y plataformas de datos para acompañar transformaciones más ambiciosas.',
+            'image' => '',
+            'image_alt' => '',
+        ],
+        [
+            'year' => '2012',
+            'title' => 'Crecimiento del equipo',
+            'text' => 'La compañía amplía talento, capacidades y presencia para responder a nuevos retos tecnológicos y de negocio.',
+            'image' => '',
+            'image_alt' => '',
+        ],
+        [
+            'year' => '2014',
+            'title' => 'Nuevas capacidades cloud',
+            'text' => 'Bluetab incorpora nuevas prácticas de modernización tecnológica para diseñar plataformas más flexibles, robustas y preparadas para escalar.',
+            'image' => '',
+            'image_alt' => '',
+        ],
+        [
+            'year' => '2015',
+            'title' => 'Impulso internacional',
+            'text' => 'La compañía acompaña a organizaciones globales y fortalece su experiencia en entornos complejos, regulados y multiculturales.',
+            'image' => '',
+            'image_alt' => '',
+        ],
+        [
+            'year' => '2017',
+            'title' => 'Data como ventaja competitiva',
+            'text' => 'Bluetab ayuda a sus clientes a convertir el dato en una capacidad estructural para tomar mejores decisiones y acelerar su negocio.',
+            'image' => '',
+            'image_alt' => '',
+        ],
+        [
+            'year' => '2021',
+            'title' => 'Una nueva etapa',
+            'text' => 'Bluetab entra en una fase de mayor escala, combinando cultura técnica, delivery especializado y visión estratégica.',
+            'image' => '',
+            'image_alt' => '',
+        ],
+        [
+            'year' => '2023',
+            'title' => 'Evolución hacia IA',
+            'text' => 'El avance de la inteligencia artificial abre nuevas oportunidades para diseñar soluciones de datos más inteligentes, automatizadas y accionables.',
+            'image' => '',
+            'image_alt' => '',
+        ],
+        [
+            'year' => '2025',
+            'title' => 'Lanzamiento de purIA',
+            'text' => 'Bluetab impulsa una nueva etapa con el lanzamiento de purIA, apostando por capacidades multiagente y soluciones más avanzadas para migración y gestión de datos.',
+            'image' => '',
+            'image_alt' => '',
+        ],
+        [
+            'year' => '2026',
+            'title' => 'El futuro se construye con datos',
+            'text' => 'Bluetab sigue evolucionando su propuesta para ayudar a las organizaciones a crear valor real con datos, cloud e inteligencia artificial.',
+            'image' => '',
+            'image_alt' => '',
+        ],
+    ];
+}
+
+function bluetab_normalize_history_timeline_items($items)
+{
+    if (!is_array($items)) {
+        return [];
+    }
+
+    $normalized_items = [];
+
+    foreach ($items as $item) {
+        if (!is_array($item)) {
+            continue;
+        }
+
+        $year = isset($item['year']) ? sanitize_text_field((string) $item['year']) : '';
+        $title = isset($item['title']) ? sanitize_text_field((string) $item['title']) : '';
+        $text = isset($item['text']) ? sanitize_textarea_field((string) $item['text']) : '';
+        $image = isset($item['image']) ? esc_url_raw((string) $item['image']) : '';
+        $image_alt = isset($item['image_alt']) ? sanitize_text_field((string) $item['image_alt']) : '';
+
+        if ($year === '' || ($title === '' && $text === '' && $image === '')) {
+            continue;
+        }
+
+        $normalized_items[] = [
+            'year' => $year,
+            'title' => $title,
+            'text' => $text,
+            'image' => $image,
+            'image_alt' => $image_alt,
+        ];
+    }
+
+    usort($normalized_items, static function ($item_a, $item_b) {
+        return intval($item_a['year']) <=> intval($item_b['year']);
+    });
+
+    return $normalized_items;
+}
+
+function bluetab_get_history_timeline_items()
+{
+    $items = [];
+
+    if (function_exists('get_field')) {
+        $raw_items = get_field('bt_history_timeline_items');
+
+        if (is_string($raw_items) && trim($raw_items) !== '') {
+            $decoded_items = json_decode($raw_items, true);
+
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $items = bluetab_normalize_history_timeline_items($decoded_items);
+            }
+        }
+    }
+
+    if (empty($items)) {
+        $items = bluetab_normalize_history_timeline_items(bluetab_get_history_timeline_fallback_items());
+    }
+
+    return $items;
+}
+
+function bluetab_history_timeline_shortcode()
+{
+    $items = bluetab_get_history_timeline_items();
+
+    if (empty($items)) {
+        return '';
+    }
+
+    $instance_id = 'bt-history-timeline-' . wp_rand(1000, 9999);
+    $initial_item = $items[0];
+    $json_items = wp_json_encode($items, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+
+    ob_start();
+    ?>
+    <section class="bt-history-timeline" data-bt-history-timeline aria-labelledby="<?php echo esc_attr($instance_id); ?>-heading">
+        <div class="bt-history-timeline__inner">
+            <h2 id="<?php echo esc_attr($instance_id); ?>-heading" class="bt-type-h2 bt-history-timeline__heading">
+                Nuestra historia
+            </h2>
+
+            <div class="bt-history-timeline__layout">
+                <aside class="bt-history-timeline__nav" aria-label="Años de la historia de Bluetab">
+                    <button class="bt-history-timeline__control bt-history-timeline__control--prev" type="button" aria-label="Ver año anterior">
+                        <span class="material-symbols-rounded" aria-hidden="true">keyboard_arrow_up</span>
+                    </button>
+
+                    <ul class="bt-history-timeline__years">
+                        <?php foreach ($items as $index => $item): ?>
+                            <?php
+                            $distance = abs($index);
+                            $distance_class = 'is-far';
+
+                            if ($distance === 0) {
+                                $distance_class = 'is-active';
+                            } elseif ($distance === 1) {
+                                $distance_class = 'is-near';
+                            } elseif ($distance === 2) {
+                                $distance_class = 'is-mid';
+                            }
+
+                            $is_initially_visible = $index < 6;
+                            ?>
+                            <li class="bt-history-timeline__year-item" <?php echo !$is_initially_visible ? 'hidden' : ''; ?>>
+                                <button class="bt-history-timeline__year-button <?php echo esc_attr($distance_class); ?>"
+                                    type="button"
+                                    data-bt-history-index="<?php echo esc_attr((string) $index); ?>"
+                                    <?php echo !$is_initially_visible ? 'hidden' : ''; ?>
+                                    <?php echo $index === 0 ? 'aria-current="true"' : ''; ?>>
+                                    <span class="bt-history-timeline__year-dot" aria-hidden="true"></span>
+                                    <span class="bt-history-timeline__year-label"><?php echo esc_html($item['year']); ?></span>
+                                </button>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+
+                    <button class="bt-history-timeline__control bt-history-timeline__control--next" type="button" aria-label="Ver año siguiente">
+                        <span class="material-symbols-rounded" aria-hidden="true">keyboard_arrow_down</span>
+                    </button>
+                </aside>
+
+                <article class="bt-history-timeline__content" aria-live="polite">
+                    <?php if ($initial_item['title'] !== ''): ?>
+                        <h3 class="bt-history-timeline__title"><?php echo esc_html($initial_item['title']); ?></h3>
+                    <?php endif; ?>
+
+                    <div class="bt-history-timeline__body">
+                        <div class="bt-history-timeline__copy">
+                            <?php if ($initial_item['text'] !== ''): ?>
+                                <p class="bt-history-timeline__text"><?php echo esc_html($initial_item['text']); ?></p>
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="bt-history-timeline__media" <?php echo $initial_item['image'] === '' ? 'hidden' : ''; ?>>
+                            <?php if ($initial_item['image'] !== ''): ?>
+                                <img src="<?php echo esc_url($initial_item['image']); ?>" alt="<?php echo esc_attr($initial_item['image_alt']); ?>" loading="lazy">
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <script type="application/json" class="bt-history-timeline__data">
+                <?php echo $json_items ? $json_items : '[]'; ?>
+            </script>
+        </div>
+    </section>
+    <?php
+    return ob_get_clean();
 }
 
 function bluetab_accelerators_shortcode()
@@ -525,3 +770,4 @@ add_shortcode('bt_hero', 'bluetab_hero_shortcode');
 add_shortcode('bt_solution_card', 'bluetab_solution_card_shortcode');
 add_shortcode('bt_success_cases', 'bluetab_success_cases_shortcode');
 add_shortcode('bt_accelerators', 'bluetab_accelerators_shortcode');
+add_shortcode('bt_history_timeline', 'bluetab_history_timeline_shortcode');

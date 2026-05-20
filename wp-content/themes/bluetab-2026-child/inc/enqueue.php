@@ -72,9 +72,17 @@ function bluetab_child_enqueue_assets()
     );
 
     wp_enqueue_script(
+        'bluetab-history-timeline',
+        get_stylesheet_directory_uri() . '/assets/js/components/history-timeline.js',
+        [],
+        bluetab_child_asset_version('assets/js/components/history-timeline.js'),
+        true
+    );
+
+    wp_enqueue_script(
         'bluetab-main',
         get_stylesheet_directory_uri() . '/assets/js/main.js',
-        ['bluetab-waves', 'bluetab-mesh'],
+        ['bluetab-waves', 'bluetab-mesh', 'bluetab-history-timeline'],
         bluetab_child_asset_version('assets/js/main.js'),
         true
     );
